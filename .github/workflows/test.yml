@@ -1,35 +1,27 @@
-# Based on
-# https://pypi.org/project/tox-gh-actions/
-
----
-name: Test the application using Tox.
+name: tests
 
 on:
-  - push
-  - pull_request
+  push:
+    branches: [master]
+  pull_request:
 
 jobs:
-  build:
-    # Using ubuntu-22.04 instead of ubuntu-latest because ubuntu-latest (24.04)
-    # does not support Python 3.7. We'll upgrade to ubuntu-latest when we
-    # drop support for Python 3.7 in the future.
-    runs-on: ubuntu-22.04
+  test:
+    runs-on: ubuntu-latest
     strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
       fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - name: apt update
-        run: sudo apt update
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install tox
         run: |
           python -m pip install --upgrade pip
           python -m pip install tox tox-gh-actions
-      - name: Test with tox
+      - name: Run tests
         run: tox -v

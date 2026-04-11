@@ -1,6 +1,32 @@
 # Changelog
 
-## 1.9.0
+## Community fork
+
+This project is now maintained as a community fork at
+[`django-notifications-community/django-notifications-community`](https://github.com/django-notifications-community/django-notifications-community)
+and published to PyPI as `django-notifications-community`. See
+[upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
+for background on why the fork exists.
+
+## 1.9.0 (community fork release, 2026-04-11)
+
+First release published by the community fork. Code contents are identical to
+upstream `django-notifications/django-notifications` `master` at the point of
+forking, with no functional changes to the `notifications` package. The goal
+of this release is to put the unreleased 1.9.0 work onto PyPI so users can
+consume the Django 5.x and Python 3.13 support that was stuck unreleased
+upstream.
+
+Fork-specific changes:
+
+  - Published upstream's unreleased 1.9.0 to PyPI as `django-notifications-community`
+  - Migrated packaging from `setup.py` + `setup.cfg` to `pyproject.toml` (PEP 621)
+  - Corrected SPDX license metadata to `BSD-3-Clause` (matches `LICENSE.txt`; upstream `setup.py` incorrectly declared `MIT`)
+  - Refreshed CI matrix to Django 4.2 / 5.1 / 5.2 x Python 3.10 / 3.11 / 3.12 / 3.13 on `ubuntu-latest`
+  - Dropped vestigial `.travis.yml`
+  - Added `CONTRIBUTING.md` and `SECURITY.md`
+
+Upstream 1.9.0 content (unchanged):
 
   - Added support for Django 5.0, 5.1, and 5.2
   - Added support for Python 3.12 and 3.13

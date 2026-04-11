@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-notifications-community"
+dynamic = ["version"]
+description = "GitHub notifications alike app for Django (community fork)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
+keywords = ["django", "notifications", "github", "action", "event", "stream"]
+authors = [
+    { name = "django-notifications team" },
+]
+maintainers = [
+    { name = "django-notifications-community contributors" },
+]
+dependencies = [
+    "django>=4.2,<5.3",
+    "django-model-utils>=3.1.0",
+    "jsonfield>=2.1.0",
+    "swapper",
+    "packaging",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/django-notifications-community/django-notifications-community"
+Source = "https://github.com/django-notifications-community/django-notifications-community"
+Issues = "https://github.com/django-notifications-community/django-notifications-community/issues"
+Changelog = "https://github.com/django-notifications-community/django-notifications-community/blob/master/CHANGELOG.md"
+Upstream = "https://github.com/django-notifications/django-notifications"
+
+[tool.setuptools.dynamic]
+version = { attr = "notifications.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["notifications*"]

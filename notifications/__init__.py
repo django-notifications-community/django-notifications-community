@@ -4,6 +4,7 @@
     ~~~~~
     A GitHub notification alike app for Django.
     :copyright: (c) 2015 by django-notifications team.
+    :copyright: (c) 2026 by django-notifications-community contributors.
     :license: BSD, see LICENSE.txt for more details.
 """
 
