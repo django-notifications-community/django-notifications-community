@@ -1,8 +1,31 @@
-# `django-notifications` Documentation
+# django-notifications (community fork)
 
-[![build-status](https://travis-ci.org/django-notifications/django-notifications.svg)](https://travis-ci.org/django-notifications/django-notifications)
-[![Coverage Status](https://coveralls.io/repos/github/django-notifications/django-notifications/badge.svg?branch=master)](https://coveralls.io/github/django-notifications/django-notifications?branch=master)
+[![tests](https://github.com/django-notifications-community/django-notifications-community/actions/workflows/test.yml/badge.svg)](https://github.com/django-notifications-community/django-notifications-community/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/django-notifications-community.svg)](https://pypi.org/project/django-notifications-community/)
 
+> **This is a community-maintained fork of
+> [django-notifications/django-notifications](https://github.com/django-notifications/django-notifications).**
+>
+> The original project appears unmaintained: version 1.9.0 (with Django 5.x and
+> Python 3.13 support) has been sitting unreleased on `master`, and requests for
+> PyPI and maintainer access have gone unanswered. See the discussion in
+> [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
+> for context.
+>
+> All credit for the original work goes to Justin Quick, Yang Yubo, and the
+> `django-notifications` team (see [`AUTHORS.txt`](AUTHORS.txt)). This fork
+> exists solely to continue shipping releases to PyPI and keep the project
+> compatible with current Django and Python versions. If upstream resumes
+> active maintenance, we will happily coordinate and, where appropriate,
+> redirect users back.
+>
+> **Drop-in replacement.** The Python import path is unchanged
+> (`import notifications`). To switch from the original package:
+>
+> ```bash
+> pip uninstall django-notifications-hq
+> pip install django-notifications-community
+> ```
 
 [django-notifications](https://github.com/django-notifications/django-notifications) is a GitHub notification alike app for Django, it was derived from [django-activity-stream](https://github.com/justquick/django-activity-stream)
 
@@ -38,7 +61,7 @@ Spec: <http://activitystrea.ms/specs/atom/1.0/>
 
 ## Requirements
 
--   Python 3.9, 3.10, 3.11, 3.12, 3.13
+-   Python 3.10, 3.11, 3.12, 3.13
 -   Django 4.2, 5.1, 5.2
 
 ## Installation
@@ -46,15 +69,15 @@ Spec: <http://activitystrea.ms/specs/atom/1.0/>
 Installation is easy using `pip` and will install all required
 libraries.
 ```bash
-$ pip install django-notifications-hq
+$ pip install django-notifications-community
 ```
 or get it from source
 
 ```bash
-$ git clone https://github.com/django-notifications/django-notifications
-$ cd django-notifications
-$ python setup.py sdist
-$ pip install dist/django-notifications-hq*
+$ git clone https://github.com/django-notifications-community/django-notifications-community
+$ cd django-notifications-community
+$ python -m build
+$ pip install dist/django_notifications_community-*.whl
 ```
 
 Note that [django-model-utils](http://pypi.python.org/pypi/django-model-utils)

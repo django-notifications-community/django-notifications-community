@@ -40,3 +40,5 @@ blag (https://github.com/blag)
 Zhongyuan Zhang (https://github.com/zhang-z)
 Samuel Spencer (https://github.com/LegoStormtroopr)
 
+--- django-notifications-community (fork) ---
+je-bugshell (https://github.com/je-bugshell)
