@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=64", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -49,8 +49,11 @@ Issues = "https://github.com/django-notifications-community/django-notifications
 Changelog = "https://github.com/django-notifications-community/django-notifications-community/blob/master/CHANGELOG.md"
 Upstream = "https://github.com/django-notifications/django-notifications"
 
-[tool.setuptools.dynamic]
-version = { attr = "notifications.__version__" }
+[tool.setuptools_scm]
+# Empty config = defaults. setuptools-scm will read the version from the
+# nearest git tag (stripping the leading "v"), append a dev suffix for
+# untagged commits, and use fallback_version outside a git checkout.
+fallback_version = "0.0.0+unknown"
 
 [tool.setuptools.packages.find]
 include = ["notifications*"]
