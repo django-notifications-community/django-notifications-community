@@ -7,8 +7,12 @@
     :copyright: (c) 2026 by django-notifications-community contributors.
     :license: BSD, see LICENSE.txt for more details.
 """
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
-# PEP 386-compliant version number: N.N[.N]+[{a|b|c|rc}N[.N]+][.postN][.devN]
-__version__ = '1.9.0'
+try:
+    __version__ = _pkg_version("django-notifications-community")
+except PackageNotFoundError:
+    # Running from a source checkout without `pip install -e .`.
+    __version__ = "0.0.0+unknown"
 
 default_app_config = 'notifications.apps.Config'  # pylint: disable=invalid-name
