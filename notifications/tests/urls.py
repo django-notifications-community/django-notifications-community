@@ -1,6 +1,4 @@
 """Django notification urls for tests"""
-
-# -*- coding: utf-8 -*-
 from django import get_version
 from django.contrib import admin
 from packaging.version import (

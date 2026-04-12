@@ -1,6 +1,4 @@
 """Django notifications views for tests"""
-
-# -*- coding: utf-8 -*-
 import random
 
 from django.contrib.auth.decorators import login_required
