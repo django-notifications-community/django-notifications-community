@@ -181,7 +181,7 @@ class AbstractNotification(models.Model):
     actor.short_description = _('actor')
 
     verb = models.CharField(_('verb'), max_length=255)
-    description = models.TextField(_('description'), blank=True, null=True)
+    description = models.TextField(_('description'), blank=True, null=True)  # noqa: DJ001
 
     target_content_type = models.ForeignKey(
         ContentType,
@@ -191,7 +191,7 @@ class AbstractNotification(models.Model):
         blank=True,
         null=True,
     )
-    target_object_id = models.CharField(_('target object id'), max_length=255, blank=True, null=True)
+    target_object_id = models.CharField(_('target object id'), max_length=255, blank=True, null=True)  # noqa: DJ001
     target = GenericForeignKey('target_content_type', 'target_object_id')
     target.short_description = _('target')
 
@@ -203,7 +203,7 @@ class AbstractNotification(models.Model):
         blank=True,
         null=True,
     )
-    action_object_object_id = models.CharField(_('action object object id'), max_length=255, blank=True, null=True)
+    action_object_object_id = models.CharField(_('action object object id'), max_length=255, blank=True, null=True)  # noqa: DJ001
     action_object = GenericForeignKey('action_object_content_type', 'action_object_object_id')
     action_object.short_description = _('action object')
 
