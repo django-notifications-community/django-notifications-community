@@ -13,7 +13,6 @@ from model_utils import Choices
 from swapper import load_model
 
 from notifications import settings as notifications_settings
-from notifications.signals import notify
 from notifications.utils import id2slug
 
 
@@ -364,7 +363,3 @@ def notify_handler(verb, **kwargs):
     Notification.objects.bulk_create(new_notifications)
 
     return new_notifications
-
-
-# connect the signal
-notify.connect(notify_handler, dispatch_uid='notifications.models.notification')
