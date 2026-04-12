@@ -499,8 +499,9 @@ class NotificationTestPages(TestCase):
 
     def test_unread_all_objects(self):
         """
-        Test notification with all objects (actor, target, action_object)
-        Test that object URLs are in the output.
+        Test notification with all objects (actor, target, action_object).
+        Verifies object URLs are in the output and that get_url_for_notifications
+        takes priority over get_absolute_url when both are defined.
         """
         self.login('to', 'pwd')
         Notification.objects.filter(recipient=self.to_user).mark_all_as_read()
@@ -543,34 +544,10 @@ class NotificationTestPages(TestCase):
 
         # live_notify_badge renders a span with the unread count
         self.assertIn("<span class='live_notify_badge'>", content)
-        self.assertIn(f'{self.message_count}', content)
+        self.assertIn(str(self.message_count), content)
 
         # live_notify_list renders an empty ul
         self.assertIn("<ul class='live_notify_list'></ul>", content)
-
-        # notifications_unread outputs the raw count
-        self.assertIn(str(self.message_count), content)
-
-    def test_api_prefers_get_url_for_notifications_over_get_absolute_url(self):
-        """When a model defines get_url_for_notifications, the API uses it instead of get_absolute_url."""
-        self.login('to', 'pwd')
-        Notification.objects.filter(recipient=self.to_user).mark_all_as_read()
-
-        customer = Customer.objects.create(name='plain_customer')
-        target = TargetObject.objects.create(name='special_target')
-
-        # Customer only has get_absolute_url (returns foo/<id>/)
-        # TargetObject overrides with get_url_for_notifications (returns bar/<id>/)
-        notify.send(customer, recipient=self.to_user, verb='acted on', target=target)
-
-        response = self.client.get(reverse('notifications:live_unread_notification_list'))
-        data = json.loads(response.content.decode('utf-8'))
-        notification = data['unread_list'][0]
-
-        # Actor (Customer) uses get_absolute_url fallback
-        self.assertEqual(notification['actor_url'], f'foo/{customer.id}/')
-        # Target (TargetObject) uses get_url_for_notifications
-        self.assertEqual(notification['target_url'], f'bar/{target.id}/')
 
     def test_anon_user_gets_nothing(self):
         response = self.client.post(reverse('notifications:live_unread_notification_count'))
