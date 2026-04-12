@@ -25,7 +25,7 @@ from notifications.utils import id2slug
 
 Notification = load_model('notifications', 'Notification')
 
-from django.test import override_settings  # noqa
+from django.test import override_settings
 from django.urls import reverse
 
 MALICIOUS_NEXT_URLS = [
