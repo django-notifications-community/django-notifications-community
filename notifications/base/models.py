@@ -297,8 +297,8 @@ class AbstractNotification(models.Model):
     def action_object_url(self):
         try:
             url = reverse("admin:{0}_{1}_change".format(self.action_object_content_type.app_label,
-                                                        self.action_content_type.model),
-                          args=(self.action_object_id,))
+                                                        self.action_object_content_type.model),
+                          args=(self.action_object_object_id,))
             return format_html("<a href='{url}'>{id}</a>", url=url, id=self.action_object_object_id)
         except NoReverseMatch:
             return self.action_object_object_id
