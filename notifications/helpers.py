@@ -59,4 +59,5 @@ def get_notification_list(request, method_name='all'):
         notification_list.append(struct)
         if request.GET.get('mark_as_read'):
             notification.mark_as_read()
-    return notification_list
+    total_count = getattr(request.user.notifications, method_name)().count()
+    return total_count, notification_list
