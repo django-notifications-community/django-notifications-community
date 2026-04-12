@@ -11,5 +11,6 @@ htmlcov
 .python-version
 .eggs/
 .venv/
+.ruff_cache/
 test.sqlite3
 settings.json

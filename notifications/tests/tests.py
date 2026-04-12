@@ -5,7 +5,6 @@ Replace this with more appropriate tests for your application.
 """
 
 # -*- coding: utf-8 -*-
-# pylint: disable=too-many-lines,missing-docstring
 import json
 from datetime import timezone as dt_timezone
 from zoneinfo import ZoneInfo
@@ -40,7 +39,7 @@ try:
     from django.urls import reverse
 except ImportError:
     # Django <= 1.6
-    from django.core.urlresolvers import reverse  # pylint: disable=no-name-in-module,import-error
+    from django.core.urlresolvers import reverse
 
 MALICIOUS_NEXT_URLS = [
     'http://bla.com',
@@ -125,7 +124,7 @@ class NotificationManagersTest(TestCase):
                 # only check types for now
                 self.assertEqual(type(result[1][0]), Notification)
 
-    def test_notify_send_return_val_group(self):  # pylint: disable=invalid-name
+    def test_notify_send_return_val_group(self):
         results = notify.send(self.from_user, recipient=self.to_group, verb='commented', action_object=self.from_user)
         for result in results:
             if result[0] is notify_handler:
@@ -155,7 +154,7 @@ class NotificationManagersTest(TestCase):
         Notification.objects.filter(recipient=self.to_user).mark_all_as_read()
         self.assertEqual(self.to_user.notifications.unread().count(), 0)
 
-    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'SOFT_DELETE': True})  # pylint: disable=invalid-name
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'SOFT_DELETE': True})
     def test_mark_all_as_read_manager_with_soft_delete(self):
         # even soft-deleted notifications should be marked as read
         # refer: https://github.com/django-notifications/django-notifications/issues/126
@@ -173,7 +172,7 @@ class NotificationManagersTest(TestCase):
         Notification.objects.filter(recipient=self.to_user).mark_all_as_unread()
         self.assertEqual(Notification.objects.unread().count(), self.message_count)
 
-    def test_mark_all_deleted_manager_without_soft_delete(self):  # pylint: disable=invalid-name
+    def test_mark_all_deleted_manager_without_soft_delete(self):
         self.assertRaises(ImproperlyConfigured, Notification.objects.active)
         self.assertRaises(ImproperlyConfigured, Notification.objects.active)
         self.assertRaises(ImproperlyConfigured, Notification.objects.mark_all_as_deleted)
@@ -327,7 +326,7 @@ class NotificationTestPages(TestCase):
         self.assertEqual(len(response.context['notifications']), len(self.to_user.notifications.unread()))
         self.assertEqual(len(response.context['notifications']), self.message_count - 1)
 
-    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'SOFT_DELETE': True})  # pylint: disable=invalid-name
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'SOFT_DELETE': True})
     def test_soft_delete_messages_manager(self):
         self.login('to', 'pwd')
 
@@ -495,7 +494,7 @@ class NotificationTestPages(TestCase):
         self.assertEqual(data['all_list'][0]['verb'], 'commented')
         self.assertEqual(data['all_list'][0]['slug'], id2slug(data['all_list'][0]['id']))
 
-    def test_unread_list_api_mark_as_read(self):  # pylint: disable=invalid-name
+    def test_unread_list_api_mark_as_read(self):
         self.login('to', 'pwd')
         num_requested = 3
         response = self.client.get(

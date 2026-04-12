@@ -16,4 +16,4 @@ except PackageNotFoundError:
     # Running from a source checkout without `pip install -e .`.
     __version__ = '0.0.0+unknown'
 
-default_app_config = 'notifications.apps.Config'  # pylint: disable=invalid-name
+default_app_config = 'notifications.apps.Config'
