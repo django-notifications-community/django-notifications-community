@@ -35,7 +35,7 @@ def get_notification_list(request, method_name='all'):
     ).prefetch_related('actor', 'target', 'action_object')
     for notification in qs[0:num_to_fetch]:
         struct = model_to_dict(notification, fields=[
-            'level', 'unread', 'verb', 'description',
+            'id', 'level', 'unread', 'verb', 'description',
             'timestamp', 'public', 'deleted', 'emailed',
         ])
         struct['slug'] = id2slug(notification.id)
