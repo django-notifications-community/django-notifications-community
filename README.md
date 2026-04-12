@@ -507,13 +507,45 @@ now you need to implement it if needed. There is a reserved field
 
 ### Bulk creation and signals
 
-When a notification is sent to multiple recipients (a `Group`, a
-`QuerySet`, or a list of users), `django-notifications` uses Django's
-`bulk_create` for efficiency. `bulk_create` does **not** fire `post_save`
-signals on the individual `Notification` objects. If you rely on
-`post_save` to trigger side-effects (e.g. sending emails), connect to the
-`notifications.signals.notify` signal instead, which fires once per
-`notify.send()` call before the notifications are written to the database.
+As of v1.11.0, `notify.send()` uses `bulk_create` when writing
+notifications, which means Django's `post_save` signal does **not** fire
+for individual `Notification` objects.
+
+If you previously relied on `post_save` to trigger side-effects (e.g.
+sending emails or push notifications), switch to the `notify` signal
+instead:
+
+```python
+from notifications.signals import notify
+
+def handle_notifications(sender, verb, **kwargs):
+    recipient = kwargs.get('recipient')
+    # your side-effect logic here (send email, push notification, etc.)
+
+notify.connect(handle_notifications)
+```
+
+The `notify` signal fires once per `notify.send()` call, before the
+notifications are written to the database. For side-effects that need
+access to the saved `Notification` objects, call `notify.send()` and use
+its return value directly:
+
+```python
+from notifications.signals import notify
+
+responses = notify.send(
+    sender=user,
+    recipient=target_user,
+    verb='commented on',
+    target=post,
+)
+
+# Each response is a (handler_function, return_value) tuple.
+# The default handler returns the list of created Notification objects.
+for handler, notifications in responses:
+    for notification in notifications:
+        send_push(notification.recipient, str(notification))
+```
 
 ### Sample App
 
