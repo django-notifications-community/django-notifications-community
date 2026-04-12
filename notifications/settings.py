@@ -1,6 +1,4 @@
 """Django notifications settings file"""
-
-# -*- coding: utf-8 -*-
 from django.conf import settings
 
 CONFIG_DEFAULTS = {

@@ -1,6 +1,4 @@
 """Django notifications admin file"""
-
-# -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.utils.translation import gettext_lazy
 from swapper import load_model
