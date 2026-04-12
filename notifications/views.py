@@ -1,17 +1,13 @@
-# -*- coding: utf-8 -*-
 ''' Django Notifications example views '''
-from django import get_version
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.encoding import iri_to_uri
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.generic import ListView
-from packaging.version import (
-    parse as parse_version,  # pylint: disable=no-name-in-module,import-error
-)
 from swapper import load_model
 
 from notifications import settings as notification_settings
@@ -19,22 +15,6 @@ from notifications.helpers import get_notification_list
 from notifications.utils import slug2id
 
 Notification = load_model('notifications', 'Notification')
-
-if parse_version(get_version()) >= parse_version('1.7.0'):
-    from django.http import JsonResponse  # noqa
-else:
-    # Django 1.6 doesn't have a proper JsonResponse
-    import json
-
-    from django.http import HttpResponse  # noqa
-
-    def date_handler(obj):
-        return obj.isoformat() if hasattr(obj, 'isoformat') else obj
-
-    def JsonResponse(data):  # noqa
-        return HttpResponse(
-            json.dumps(data, default=date_handler),
-            content_type="application/json")
 
 
 class NotificationViewList(ListView):
@@ -44,7 +24,7 @@ class NotificationViewList(ListView):
 
     @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
-        return super(NotificationViewList, self).dispatch(
+        return super().dispatch(
             request, *args, **kwargs)
 
 
@@ -137,10 +117,7 @@ def delete(request, slug=None):
 
 @never_cache
 def live_unread_notification_count(request):
-    try:
-        user_is_authenticated = request.user.is_authenticated()
-    except TypeError:  # Django >= 1.11
-        user_is_authenticated = request.user.is_authenticated
+    user_is_authenticated = request.user.is_authenticated
 
     if not user_is_authenticated:
         data = {
@@ -156,10 +133,7 @@ def live_unread_notification_count(request):
 @never_cache
 def live_unread_notification_list(request):
     ''' Return a json with a unread notification list '''
-    try:
-        user_is_authenticated = request.user.is_authenticated()
-    except TypeError:  # Django >= 1.11
-        user_is_authenticated = request.user.is_authenticated
+    user_is_authenticated = request.user.is_authenticated
 
     if not user_is_authenticated:
         data = {
@@ -180,10 +154,7 @@ def live_unread_notification_list(request):
 @never_cache
 def live_all_notification_list(request):
     ''' Return a json with a unread notification list '''
-    try:
-        user_is_authenticated = request.user.is_authenticated()
-    except TypeError:  # Django >= 1.11
-        user_is_authenticated = request.user.is_authenticated
+    user_is_authenticated = request.user.is_authenticated
 
     if not user_is_authenticated:
         data = {
@@ -202,10 +173,7 @@ def live_all_notification_list(request):
 
 
 def live_all_notification_count(request):
-    try:
-        user_is_authenticated = request.user.is_authenticated()
-    except TypeError:  # Django >= 1.11
-        user_is_authenticated = request.user.is_authenticated
+    user_is_authenticated = request.user.is_authenticated
 
     if not user_is_authenticated:
         data = {
