@@ -25,19 +25,8 @@ from notifications.utils import id2slug
 
 Notification = load_model('notifications', 'Notification')
 
-try:
-    # Django >= 1.7
-    from django.test import override_settings  # noqa
-except ImportError:
-    # Django <= 1.6
-    from django.test.utils import override_settings  # noqa
-
-try:
-    # Django >= 1.7
-    from django.urls import reverse
-except ImportError:
-    # Django <= 1.6
-    from django.core.urlresolvers import reverse
+from django.test import override_settings  # noqa
+from django.urls import reverse
 
 MALICIOUS_NEXT_URLS = [
     'http://bla.com',
