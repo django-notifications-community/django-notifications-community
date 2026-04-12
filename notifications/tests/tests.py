@@ -646,3 +646,4 @@ class AdminTest(TestCase):
                 reverse('admin:{0}_notification_changelist'.format(self.app_name))
             )
             self.assertEqual(response.status_code, 200, response.content)
+
