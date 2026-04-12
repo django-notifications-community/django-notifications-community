@@ -15,5 +15,3 @@ try:
 except PackageNotFoundError:
     # Running from a source checkout without `pip install -e .`.
     __version__ = '0.0.0+unknown'
-
-default_app_config = 'notifications.apps.Config'
