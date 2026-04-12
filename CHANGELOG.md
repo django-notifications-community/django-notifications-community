@@ -8,6 +8,18 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.11.1 (2026-04-12)
+
+  - Removed dead Python 2 and Django < 2.0 compatibility code (#24)
+  - `USE_JSONFIELD` setting is now evaluated at call time instead of
+    import time, so runtime overrides work correctly (#25)
+  - API serialization now includes `id` and `timestamp` fields that were
+    previously silently dropped by `model_to_dict` (#26)
+  - Added ruff configuration and applied initial formatting pass (#27)
+  - Suppressed DJ001 lint for intentionally nullable string fields (#28)
+
+  No behavior changes.
+
 ## 1.11.0 (2026-04-12)
 
   - Fixed attribute typos in `action_object_url()` that would raise
