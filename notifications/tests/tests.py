@@ -341,7 +341,7 @@ class NotificationTestPages(TestCase):
 
         # Soft-delete one notification
         slug = id2slug(self.to_user.notifications.first().id)
-        self.client.get(reverse('notifications:delete', args=[slug]))
+        self.client.post(reverse('notifications:delete', args=[slug]))
 
         expected_count = self.message_count - 1
 
