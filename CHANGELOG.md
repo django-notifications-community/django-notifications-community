@@ -8,6 +8,37 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.11.0 (2026-04-12)
+
+  - Fixed attribute typos in `action_object_url()` that would raise
+    `AttributeError` whenever the method was called (#15)
+  - Restored `assert_soft_delete()` error message that was left as a
+    placeholder string (#16)
+  - Fixed unread notification count cache leaking across users due to a
+    shared cache key (#17)
+  - Excluded soft deleted notifications from API count and list endpoints
+    when `SOFT_DELETE` is enabled (#18)
+  - State changing views (`mark_as_read`, `mark_as_unread`,
+    `mark_all_as_read`, `delete`) now require POST requests. GET requests
+    return 405 Method Not Allowed. The bundled `notice.html` template has
+    been updated accordingly. (#19)
+  - `mark_as_read()`, `mark_as_unread()`, and the soft delete view now pass
+    `update_fields` to `save()`, reducing write amplification and avoiding
+    race conditions with concurrent updates (#20)
+  - `get_notification_list` now marks notifications as read with a single
+    bulk UPDATE instead of one `save()` per row (#21)
+  - `notify_handler` now uses `bulk_create` instead of one `save()` per
+    recipient (#22)
+
+  **Potentially breaking changes:**
+
+  - Views that previously accepted GET now require POST. Templates and
+    client code that use `<a>` links to mark/delete endpoints must switch
+    to `<form method="post">` with `{% csrf_token %}`.
+  - `bulk_create` does not fire `post_save` signals. If you have registered
+    `post_save` handlers on the `Notification` model, they will no longer
+    fire when notifications are created via `notify.send()`.
+
 ## 1.10.0 (2026-04-12)
 
   - Fixed `notify_handler` kwargs mutation across multiple recipients: custom
