@@ -356,17 +356,22 @@ def notify_handler(verb, **kwargs):
         # Set optional objects
         for obj, opt in optional_objs:
             if obj is not None:
-                for_concrete_model = kwargs.pop(f'{opt}_for_concrete_model', True)
+                for_concrete_model = kwargs.get(f'{opt}_for_concrete_model', True)
                 setattr(newnotify, '%s_object_id' % opt, obj.pk)
                 setattr(newnotify, '%s_content_type' % opt,
                         ContentType.objects.get_for_model(obj, for_concrete_model=for_concrete_model))
 
         if kwargs and EXTRA_DATA:
-            # set kwargs as model column if available
+            # set kwargs as model column if available, put the rest in data
+            data_kwargs = {}
             for key in list(kwargs.keys()):
+                if key.endswith('_for_concrete_model'):
+                    continue
                 if hasattr(newnotify, key):
-                    setattr(newnotify, key, kwargs.pop(key))
-            newnotify.data = kwargs
+                    setattr(newnotify, key, kwargs[key])
+                else:
+                    data_kwargs[key] = kwargs[key]
+            newnotify.data = data_kwargs
 
         newnotify.save()
         new_notifications.append(newnotify)
