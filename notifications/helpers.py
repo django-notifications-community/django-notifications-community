@@ -34,7 +34,10 @@ def get_notification_list(request, method_name='all'):
         'actor_content_type', 'target_content_type', 'action_object_content_type'
     ).prefetch_related('actor', 'target', 'action_object')
     for notification in qs[0:num_to_fetch]:
-        struct = model_to_dict(notification)
+        struct = model_to_dict(notification, fields=[
+            'level', 'unread', 'verb', 'description',
+            'timestamp', 'public', 'deleted', 'emailed',
+        ])
         struct['slug'] = id2slug(notification.id)
         if notification.actor:
             struct['actor'] = str(notification.actor)
