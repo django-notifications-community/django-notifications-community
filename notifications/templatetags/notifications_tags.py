@@ -22,9 +22,9 @@ register = Library()
 
 
 def get_cached_notification_unread_count(user):
-
+    cache_key = f'notifications_unread_count_{user.pk}'
     return cache.get_or_set(
-        'cache_notification_unread_count',
+        cache_key,
         user.notifications.unread().count,
         settings.get_config()['CACHE_TIMEOUT']
     )

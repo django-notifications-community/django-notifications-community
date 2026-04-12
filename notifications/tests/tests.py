@@ -570,6 +570,22 @@ class TagTest(TestCase):
         output = u"True"
         self.tag_test(template, context, output)
 
+    def test_cached_unread_count_is_per_user(self):
+        """Cache key must be scoped per user, not global."""
+        from django.core.cache import cache
+        from notifications.templatetags.notifications_tags import (
+            get_cached_notification_unread_count,
+        )
+        cache.clear()
+        other_user = User.objects.create_user(
+            username="other", password="pwd", email="other@example.com"
+        )
+        # to_user has 1 notification; other_user has 0
+        count_to = get_cached_notification_unread_count(self.to_user)
+        count_other = get_cached_notification_unread_count(other_user)
+        self.assertEqual(count_to, 1)
+        self.assertEqual(count_other, 0)
+
 
 class NotificationQueryCountTest(TestCase):
     """Verify that listing notifications uses a bounded number of queries."""
