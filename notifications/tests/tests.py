@@ -708,6 +708,7 @@ class AdminTest(TestCase):
         self.to_user.is_staff = True
         self.to_user.is_superuser = True
         self.to_user.save()
+        self.client.login(username='to', password='pwd')
         for _ in range(self.message_count):
             notify.send(
                 self.from_user,
@@ -717,33 +718,26 @@ class AdminTest(TestCase):
             )
 
     def test_list(self):
-        self.client.login(username='to', password='pwd')
-
         with self.assertNumQueries(7):
             response = self.client.get(reverse(f'admin:{self.app_name}_notification_changelist'))
             self.assertEqual(response.status_code, 200, response.content)
 
     def test_list_display_columns(self):
         """Admin changelist renders the expected columns."""
-        self.client.login(username='to', password='pwd')
         response = self.client.get(reverse(f'admin:{self.app_name}_notification_changelist'))
         content = response.content.decode('utf-8')
         for column in ('recipient', 'actor', 'level', 'target', 'unread', 'public'):
-            self.assertIn(column, content)
+            self.assertIn(f'column-{column}', content)
 
     def test_list_filters(self):
         """Admin changelist exposes the expected filters."""
-        self.client.login(username='to', password='pwd')
         response = self.client.get(reverse(f'admin:{self.app_name}_notification_changelist'))
         content = response.content.decode('utf-8')
-        # Django renders filter links with the parameter in the query string
         for filter_name in ('level', 'unread', 'public', 'timestamp'):
-            self.assertIn(filter_name, content)
+            self.assertIn(f'data-filter-title="{filter_name}"', content)
 
     def test_mark_unread_action(self):
         """The mark_unread admin action sets selected notifications to unread."""
-        self.client.login(username='to', password='pwd')
-
         # Mark all as read first
         Notification.objects.filter(recipient=self.to_user).update(unread=False)
         self.assertEqual(Notification.objects.filter(recipient=self.to_user, unread=True).count(), 0)
