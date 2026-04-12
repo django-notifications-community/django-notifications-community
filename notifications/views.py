@@ -123,7 +123,7 @@ def delete(request, slug=None):
 
     if notification_settings.get_config()['SOFT_DELETE']:
         notification.deleted = True
-        notification.save()
+        notification.save(update_fields=['deleted'])
     else:
         notification.delete()
 
