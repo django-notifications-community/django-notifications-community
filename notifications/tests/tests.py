@@ -318,6 +318,27 @@ class NotificationTestPages(TestCase):
         self.assertEqual(len(response.context['notifications']), len(self.to_user.notifications.unread()))
         self.assertEqual(len(response.context['notifications']), self.message_count-1)
 
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={
+        'SOFT_DELETE': True, 'USE_JSONFIELD': True,
+    })
+    def test_soft_delete_api_consistency(self):
+        """API count/list endpoints must exclude soft-deleted notifications."""
+        self.login('to', 'pwd')
+
+        # Soft-delete one notification
+        slug = id2slug(self.to_user.notifications.first().id)
+        self.client.get(reverse('notifications:delete', args=[slug]))
+
+        expected_count = self.message_count - 1
+
+        response = self.client.get(reverse('notifications:live_all_notification_count'))
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['all_count'], expected_count)
+
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['all_count'], expected_count)
+
     def test_unread_count_api(self):
         self.login('to', 'pwd')
 

@@ -195,7 +195,7 @@ def live_all_notification_list(request):
     all_list = get_notification_list(request)
 
     data = {
-        'all_count': request.user.notifications.count(),
+        'all_count': _all_notification_qs(request.user).count(),
         'all_list': all_list
     }
     return JsonResponse(data)
@@ -213,6 +213,13 @@ def live_all_notification_count(request):
         }
     else:
         data = {
-            'all_count': request.user.notifications.count(),
+            'all_count': _all_notification_qs(request.user).count(),
         }
     return JsonResponse(data)
+
+
+def _all_notification_qs(user):
+    """Return the 'all notifications' queryset, excluding soft-deleted when enabled."""
+    if notification_settings.get_config()['SOFT_DELETE']:
+        return user.notifications.active()
+    return user.notifications.all()
