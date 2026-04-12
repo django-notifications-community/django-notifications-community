@@ -376,8 +376,9 @@ def notify_handler(verb, **kwargs):
                     data_kwargs[key] = kwargs[key]
             newnotify.data = data_kwargs
 
-        newnotify.save()
         new_notifications.append(newnotify)
+
+    Notification.objects.bulk_create(new_notifications)
 
     return new_notifications
 
