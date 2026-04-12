@@ -35,9 +35,6 @@ except ImportError:
         reverse,
     )
 
-EXTRA_DATA = notifications_settings.get_config()['USE_JSONFIELD']
-
-
 def is_soft_delete():
     return notifications_settings.get_config()['SOFT_DELETE']
 
@@ -364,7 +361,7 @@ def notify_handler(verb, **kwargs):
                 setattr(newnotify, '%s_content_type' % opt,
                         ContentType.objects.get_for_model(obj, for_concrete_model=for_concrete_model))
 
-        if kwargs and EXTRA_DATA:
+        if kwargs and notifications_settings.get_config()['USE_JSONFIELD']:
             # set kwargs as model column if available, put the rest in data
             data_kwargs = {}
             for key in list(kwargs.keys()):
