@@ -8,6 +8,26 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.10.0 (2026-04-12)
+
+  - Fixed `notify_handler` kwargs mutation across multiple recipients: custom
+    model fields and JSON data were silently lost for all recipients after the
+    first (#3)
+  - Replaced unmaintained `jsonfield` package with Django's built-in
+    `models.JSONField` (available since Django 3.1). Existing migrations are
+    shimmed so upgrades work whether or not `jsonfield` is still installed (#4)
+  - Added composite database indexes on `(content_type, object_id)` for all
+    three GenericForeignKey pairs (actor, target, action_object), speeding up
+    cascade deletes and reverse lookups on large tables (#5)
+  - Added `select_related` / `prefetch_related` to notification list views and
+    the JSON API helper, eliminating N+1 query patterns (#6)
+  - Removed `jsonfield` from dependencies
+  - Dropped support for Python 3.9 (already declared in 1.9.0 metadata but
+    not enforced)
+
+  **Migrations:** This release includes two new migrations (0011, 0012).
+  Run `python manage.py migrate` after upgrading.
+
 ## 1.9.0 (community fork release, 2026-04-11)
 
 First release published by the community fork. Code contents are identical to
