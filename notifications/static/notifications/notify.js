@@ -78,4 +78,53 @@ async function fetch_api_data() {
     }
 }
 
-setTimeout(fetch_api_data, 1000);
+function _resolveCallback(name) {
+    var parts = name.split('.');
+    var obj = window;
+    for (var i = 0; i < parts.length; i++) {
+        obj = obj[parts[i]];
+        if (typeof obj === 'undefined') {
+            return undefined;
+        }
+    }
+    return obj;
+}
+
+function _initNotifyConfig() {
+    var el = document.getElementById('notify-config');
+    if (!el) {
+        return;
+    }
+    var config;
+    try {
+        config = JSON.parse(el.textContent);
+    } catch (e) {
+        return;
+    }
+
+    notify_badge_class = config.badgeClass;
+    notify_menu_class = config.menuClass;
+    notify_api_url = config.apiUrl;
+    notify_fetch_count = config.fetchCount;
+    notify_unread_url = config.unreadUrl;
+    notify_mark_all_unread_url = config.markAllUnreadUrl;
+    notify_refresh_period = config.refreshPeriod;
+    notify_mark_as_read = config.markAsRead;
+
+    if (config.callbacks) {
+        for (var i = 0; i < config.callbacks.length; i++) {
+            var fn = _resolveCallback(config.callbacks[i]);
+            if (typeof fn === 'function') {
+                register_notifier(fn);
+            }
+        }
+    }
+
+    setTimeout(fetch_api_data, 1000);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initNotifyConfig);
+} else {
+    _initNotifyConfig();
+}
