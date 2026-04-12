@@ -66,22 +66,20 @@ Spec: <http://activitystrea.ms/specs/atom/1.0/>
 
 ## Installation
 
-Installation is easy using `pip` and will install all required
-libraries.
-```bash
-$ pip install django-notifications-community
-```
-or get it from source
+Install with pip:
 
 ```bash
-$ git clone https://github.com/django-notifications-community/django-notifications-community
-$ cd django-notifications-community
-$ python -m build
-$ pip install dist/django_notifications_community-*.whl
+pip install django-notifications-community
 ```
 
-Note that [django-model-utils](http://pypi.python.org/pypi/django-model-utils)
-will be installed: this is required for the pass-through QuerySet manager.
+or with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add django-notifications-community
+```
+
+[django-model-utils](https://pypi.org/project/django-model-utils/)
+will be installed automatically (required for the pass-through QuerySet manager).
 
 Then to add the Django Notifications to your project add the app
 `notifications` to your `INSTALLED_APPS` and urlconf.
@@ -436,7 +434,7 @@ function my_special_notification_callback(data) {
 ### Testing the live-updater
 
 1.  Clone the repo
-2.  Run `./manage.py runserver`
+2.  Run `python manage.py runserver`
 3.  Browse to `yourserverip/test/`
 4.  Click \'Make a notification\' and a new notification should appear
     in the list in 5-10 seconds.
@@ -534,8 +532,7 @@ Core contributors (in alphabetical order):
 -   [YPCrumble](https://github.com/YPCrumble)
 -   [Zhongyuan Zhang](https://github.com/zhang-z)
 
-## Contribute
+## Contributing
 
-We are looking for contributors, for anyone who\'d like to contribute
-and willing to put time and energy on this project, please contact [Yang
-Yubo](https://github.com/yangyubo).
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup, testing,
+and pull request guidelines.
