@@ -643,6 +643,91 @@ class TagTest(TestCase):
         self.assertEqual(count_to, 1)
         self.assertEqual(count_other, 0)
 
+    # -- Escaping sanity checks --
+
+    def test_register_notify_callbacks_escapes_badge_class(self):
+        """A badge_class with quotes lands inside a JSON string, not as JS."""
+        from notifications.templatetags.notifications_tags import register_notify_callbacks
+
+        html = str(register_notify_callbacks(badge_class="'; alert('xss'); //"))
+        # The value is inside a JSON string, so single quotes are literal
+        # and the whole thing is in <script type="application/json">, not executable
+        self.assertIn('application/json', html)
+        self.assertNotIn('type="text/javascript"', html)
+
+    def test_register_notify_callbacks_escapes_menu_class(self):
+        from notifications.templatetags.notifications_tags import register_notify_callbacks
+
+        html = str(register_notify_callbacks(menu_class='</script><script>alert(1)</script>'))
+        self.assertNotIn('</script><script>', html)
+        self.assertIn('\\u003C/script\\u003E', html)
+
+    def test_register_notify_callbacks_rejects_invalid_callback(self):
+        from notifications.templatetags.notifications_tags import register_notify_callbacks
+
+        with self.assertRaises(ValueError):
+            register_notify_callbacks(callbacks="x);document.location='evil';//")
+
+    def test_register_notify_callbacks_accepts_dotted_callback(self):
+        from notifications.templatetags.notifications_tags import register_notify_callbacks
+
+        html = str(register_notify_callbacks(callbacks='myApp.handlers.onNotify'))
+        self.assertIn('"myApp.handlers.onNotify"', html)
+
+    def test_register_notify_callbacks_escapes_nonce(self):
+        """A nonce containing a double-quote is escaped by format_html."""
+        from notifications.templatetags.notifications_tags import register_notify_callbacks
+
+        html = str(register_notify_callbacks(nonce='" onload="alert(1)'))
+        # The " is escaped to &quot;, so the attribute value stays quoted
+        self.assertIn('nonce="&quot;', html)
+        # There must be exactly one nonce attribute
+        self.assertEqual(html.count('nonce='), 1)
+
+    def test_register_notify_callbacks_output_is_valid_json(self):
+        """The JSON config block must be parseable."""
+        import json as json_mod
+
+        from notifications.templatetags.notifications_tags import register_notify_callbacks
+
+        html = str(register_notify_callbacks(
+            badge_class="b'<>&\"class",
+            callbacks='fill_notification_badge',
+            fetch=20,
+            mark_as_read=True,
+        ))
+        start = html.index('>') + 1
+        end = html.index('</script>')
+        config = json_mod.loads(html[start:end])
+        self.assertEqual(config['badgeClass'], "b'<>&\"class")
+        self.assertEqual(config['fetchCount'], 20)
+        self.assertTrue(config['markAsRead'])
+        self.assertEqual(config['callbacks'], ['fill_notification_badge'])
+
+    def test_live_notify_badge_escapes_class(self):
+        request = RequestFactory().get('/')
+        request.user = self.to_user
+        t = Template(
+            "{% load notifications_tags %}"
+            "{% live_notify_badge badge_class=class_name %}"
+        )
+        html = t.render(Context({
+            'request': request,
+            'user': self.to_user,
+            'class_name': "x' onclick='alert(1)'",
+        }))
+        # The single quotes are escaped to &#x27; so the browser sees one
+        # attribute value, not an injection of onclick
+        self.assertIn("&#x27;", html)
+        self.assertNotIn("onclick='alert", html)
+
+    def test_live_notify_list_escapes_class(self):
+        from notifications.templatetags.notifications_tags import live_notify_list
+
+        html = str(live_notify_list(list_class="x'><script>alert(1)</script><ul class='y"))
+        self.assertNotIn('<script>', html)
+        self.assertIn('&#x27;', html)
+
 
 class NotificationQueryCountTest(TestCase):
     """Verify that listing notifications uses a bounded number of queries."""
