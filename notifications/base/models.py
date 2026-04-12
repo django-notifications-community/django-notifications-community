@@ -280,12 +280,12 @@ class AbstractNotification(models.Model):
     def mark_as_read(self):
         if self.unread:
             self.unread = False
-            self.save()
+            self.save(update_fields=['unread'])
 
     def mark_as_unread(self):
         if not self.unread:
             self.unread = True
-            self.save()
+            self.save(update_fields=['unread'])
 
     def actor_object_url(self):
         try:
