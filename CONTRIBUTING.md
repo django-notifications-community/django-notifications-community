@@ -11,9 +11,19 @@ for context), and contributions are welcome, especially:
 
 ## Development setup
 
+We use [uv](https://docs.astral.sh/uv/) for dependency management:
+
 ```bash
 git clone https://github.com/django-notifications-community/django-notifications-community
 cd django-notifications-community
+uv sync                 # creates .venv and installs the package + dev deps
+uv run pre-commit install
+```
+
+<details>
+<summary>Without uv (pip fallback)</summary>
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -21,8 +31,10 @@ pip install tox pre-commit
 pre-commit install
 ```
 
-The pre-commit hooks run `ruff` (lint + format) on every commit so issues
-get caught before they reach CI.
+</details>
+
+The pre-commit hooks run [ruff](https://docs.astral.sh/ruff/) (lint + format)
+on every commit so issues get caught before they reach CI.
 
 ## Running tests
 
@@ -33,8 +45,13 @@ tox                     # all envs
 tox -e py312-django52   # a single env
 ```
 
-Tests live in `notifications/tests/` and use Django's built-in test runner,
-invoked through `manage.py test`.
+You can also run a quick single-version check without tox:
+
+```bash
+uv run python manage.py test
+```
+
+Tests live in `notifications/tests/` and use Django's built-in test runner.
 
 ## Opening a pull request
 
