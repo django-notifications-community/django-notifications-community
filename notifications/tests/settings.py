@@ -1,7 +1,7 @@
-''' Django notification settings for tests '''
+"""Django notification settings for tests"""
+
 # -*- coding: utf-8 -*-
 import os
-
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SECRET_KEY = 'secret_key'  # noqa
@@ -20,7 +20,7 @@ DATABASES = {
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware'
+    'django.contrib.messages.middleware.MessageMiddleware',
 )
 
 # Django >= 2.0
@@ -41,16 +41,16 @@ INSTALLED_APPS = [
 ROOT_URLCONF = 'notifications.tests.urls'
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, 'static'),
 ]
-STATIC_ROOT = os.path.join(BASE_DIR, "static-files")
+STATIC_ROOT = os.path.join(BASE_DIR, 'static-files')
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
         'OPTIONS': {
-            'loaders' : [
+            'loaders': [
                 'django.template.loaders.filesystem.Loader',
                 'django.template.loaders.app_directories.Loader',
             ],

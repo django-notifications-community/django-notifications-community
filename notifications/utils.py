@@ -1,4 +1,4 @@
-'''' Django notifications utils file '''
+"""' Django notifications utils file"""
 
 
 def slug2id(slug):

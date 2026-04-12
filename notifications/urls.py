@@ -1,8 +1,8 @@
-''' Django notification urls file '''
+"""Django notification urls file"""
+
 from django.urls import re_path as pattern
 
 from . import views
-
 
 urlpatterns = [
     pattern(r'^$', views.AllNotificationsList.as_view(), name='all'),

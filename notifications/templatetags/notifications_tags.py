@@ -1,22 +1,19 @@
-''' Django notifications template tags file '''
+"""Django notifications template tags file"""
+
 from django.core.cache import cache
 from django.template import Library
 from django.urls import reverse
 from django.utils.html import format_html
 
 from notifications import settings
-from notifications.settings import get_config
 
 register = Library()
 
 
 def get_cached_notification_unread_count(user):
     cache_key = f'notifications_unread_count_{user.pk}'
-    return cache.get_or_set(
-        cache_key,
-        user.notifications.unread().count,
-        settings.get_config()['CACHE_TIMEOUT']
-    )
+    return cache.get_or_set(cache_key, user.notifications.unread().count, settings.get_config()['CACHE_TIMEOUT'])
+
 
 def notifications_unread(context):
     user = user_context(context)
@@ -37,15 +34,16 @@ def has_notification(user):
 
 # Requires vanilla-js framework - http://vanilla-js.com/
 @register.simple_tag
-def register_notify_callbacks(badge_class='live_notify_badge',  # pylint: disable=too-many-arguments,missing-docstring
-                              menu_class='live_notify_list',
-                              refresh_period=15,
-                              callbacks='',
-                              api_name='list',
-                              fetch=5,
-                              nonce=None,
-                              mark_as_read=False
-                              ):
+def register_notify_callbacks(
+    badge_class='live_notify_badge',  # pylint: disable=too-many-arguments,missing-docstring
+    menu_class='live_notify_list',
+    refresh_period=15,
+    callbacks='',
+    api_name='list',
+    fetch=5,
+    nonce=None,
+    mark_as_read=False,
+):
     refresh_period = int(refresh_period) * 1000
 
     if api_name == 'list':
@@ -53,7 +51,7 @@ def register_notify_callbacks(badge_class='live_notify_badge',  # pylint: disabl
     elif api_name == 'count':
         api_url = reverse('notifications:live_unread_notification_count')
     else:
-        return ""
+        return ''
     definitions = """
         notify_badge_class='{badge_class}';
         notify_menu_class='{menu_class}';
@@ -71,16 +69,16 @@ def register_notify_callbacks(badge_class='live_notify_badge',  # pylint: disabl
         unread_url=reverse('notifications:unread'),
         mark_all_unread_url=reverse('notifications:mark_all_as_read'),
         fetch_count=fetch,
-        mark_as_read=str(mark_as_read).lower()
+        mark_as_read=str(mark_as_read).lower(),
     )
 
     # add a nonce value to the script tag if one is provided
-    nonce_str = ' nonce="{nonce}"'.format(nonce=nonce) if nonce else ""
+    nonce_str = f' nonce="{nonce}"' if nonce else ''
 
-    script = '<script type="text/javascript"{nonce}>'.format(nonce=nonce_str) + definitions
+    script = f'<script type="text/javascript"{nonce_str}>' + definitions
     for callback in callbacks.split(','):
-        script += "register_notifier(" + callback + ");"
-    script += "</script>"
+        script += 'register_notifier(' + callback + ');'
+    script += '</script>'
     return format_html(script)
 
 
@@ -90,15 +88,13 @@ def live_notify_badge(context, badge_class='live_notify_badge'):
     if not user:
         return ''
 
-    html = "<span class='{badge_class}'>{unread}</span>".format(
-        badge_class=badge_class, unread=get_cached_notification_unread_count(user)
-    )
+    html = f"<span class='{badge_class}'>{get_cached_notification_unread_count(user)}</span>"
     return format_html(html)
 
 
 @register.simple_tag
 def live_notify_list(list_class='live_notify_list'):
-    html = "<ul class='{list_class}'></ul>".format(list_class=list_class)
+    html = f"<ul class='{list_class}'></ul>"
     return format_html(html)
 
 
