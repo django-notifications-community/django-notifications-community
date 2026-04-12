@@ -17,8 +17,12 @@ cd django-notifications-community
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
-pip install tox
+pip install tox pre-commit
+pre-commit install
 ```
+
+The pre-commit hooks run `ruff` (lint + format) on every commit so issues
+get caught before they reach CI.
 
 ## Running tests
 
