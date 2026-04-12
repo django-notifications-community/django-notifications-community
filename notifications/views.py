@@ -171,7 +171,7 @@ def live_unread_notification_list(request):
     unread_list = get_notification_list(request, 'unread')
 
     data = {
-        'unread_count': request.user.notifications.unread().count(),
+        'unread_count': len(unread_list),
         'unread_list': unread_list
     }
     return JsonResponse(data)
@@ -195,7 +195,7 @@ def live_all_notification_list(request):
     all_list = get_notification_list(request)
 
     data = {
-        'all_count': request.user.notifications.count(),
+        'all_count': len(all_list),
         'all_list': all_list
     }
     return JsonResponse(data)
