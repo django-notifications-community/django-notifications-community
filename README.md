@@ -505,6 +505,16 @@ Sending email to users has not been integrated into this library. So for
 now you need to implement it if needed. There is a reserved field
 `Notification.emailed` to make it easier.
 
+### Bulk creation and signals
+
+When a notification is sent to multiple recipients (a `Group`, a
+`QuerySet`, or a list of users), `django-notifications` uses Django's
+`bulk_create` for efficiency. `bulk_create` does **not** fire `post_save`
+signals on the individual `Notification` objects. If you rely on
+`post_save` to trigger side-effects (e.g. sending emails), connect to the
+`notifications.signals.notify` signal instead, which fires once per
+`notify.send()` call before the notifications are written to the database.
+
 ### Sample App
 
 A sample app has been implemented in
