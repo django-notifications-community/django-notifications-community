@@ -44,10 +44,12 @@ def is_soft_delete():
 
 def assert_soft_delete():
     if not is_soft_delete():
-        # msg = """To use 'deleted' field, please set 'SOFT_DELETE'=True in settings.
-        # Otherwise NotificationQuerySet.unread and NotificationQuerySet.read do NOT filter by 'deleted' field.
-        # """
-        msg = 'REVERTME'
+        msg = (
+            "To use the 'deleted' field, set SOFT_DELETE=True in "
+            "DJANGO_NOTIFICATIONS_CONFIG. Without it, "
+            "NotificationQuerySet.unread() and .read() do not filter "
+            "by the 'deleted' field."
+        )
         raise ImproperlyConfigured(msg)
 
 
