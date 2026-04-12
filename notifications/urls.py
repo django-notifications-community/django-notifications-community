@@ -1,4 +1,5 @@
-''' Django notification urls file '''
+"""Django notification urls file"""
+
 # -*- coding: utf-8 -*-
 from django import get_version
 from packaging.version import (

@@ -9,9 +9,9 @@ class Customer(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return f"foo/{self.id}/"
+        return f'foo/{self.id}/'
 
 
 class TargetObject(Customer):
     def get_url_for_notifications(self, notification, request):
-        return f"bar/{self.id}/"
+        return f'bar/{self.id}/'

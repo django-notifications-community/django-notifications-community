@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 from django import get_version
 from django.conf import settings
@@ -52,7 +51,8 @@ def assert_soft_delete():
 
 
 class NotificationQuerySet(models.query.QuerySet):
-    ''' Notification QuerySet '''
+    """Notification QuerySet"""
+
     def unsent(self):
         return self.filter(emailed=False)
 
@@ -173,9 +173,11 @@ class AbstractNotification(models.Model):
 
     HTML Representation::
 
-        <a href="http://oebfare.com/">brosner</a> commented on <a href="http://github.com/pinax/pinax">pinax/pinax</a> 2 hours ago # noqa
+        <a href="http://oebfare.com/">brosner</a> commented on
+        <a href="http://github.com/pinax/pinax">pinax/pinax</a> 2 hours ago
 
     """
+
     LEVELS = Choices('success', 'info', 'warning', 'error')
     level = models.CharField(_('level'), choices=LEVELS, default=LEVELS.info, max_length=20)
 
@@ -189,10 +191,7 @@ class AbstractNotification(models.Model):
     unread = models.BooleanField(_('unread'), default=True, blank=False, db_index=True)
 
     actor_content_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.CASCADE,
-        related_name='notify_actor',
-        verbose_name=_('actor content type')
+        ContentType, on_delete=models.CASCADE, related_name='notify_actor', verbose_name=_('actor content type')
     )
     actor_object_id = models.CharField(_('actor object id'), max_length=255)
     actor = GenericForeignKey('actor_content_type', 'actor_object_id')
@@ -207,7 +206,7 @@ class AbstractNotification(models.Model):
         related_name='notify_target',
         verbose_name=_('target content type'),
         blank=True,
-        null=True
+        null=True,
     )
     target_object_id = models.CharField(_('target object id'), max_length=255, blank=True, null=True)
     target = GenericForeignKey('target_content_type', 'target_object_id')
@@ -219,7 +218,7 @@ class AbstractNotification(models.Model):
         related_name='notify_action_object',
         verbose_name=_('action object content type'),
         blank=True,
-        null=True
+        null=True,
     )
     action_object_object_id = models.CharField(_('action object object id'), max_length=255, blank=True, null=True)
     action_object = GenericForeignKey('action_object_content_type', 'action_object_object_id')
@@ -253,7 +252,7 @@ class AbstractNotification(models.Model):
             'verb': self.verb,
             'action_object': self.action_object,
             'target': self.target,
-            'timesince': self.timesince()
+            'timesince': self.timesince(),
         }
         if self.target:
             if self.action_object:
@@ -269,6 +268,7 @@ class AbstractNotification(models.Model):
         current timestamp.
         """
         from django.utils.timesince import timesince as timesince_
+
         return timesince_(self.timestamp, now)
 
     @property
@@ -287,27 +287,30 @@ class AbstractNotification(models.Model):
 
     def actor_object_url(self):
         try:
-            url = reverse("admin:{0}_{1}_change".format(self.actor_content_type.app_label,
-                                                        self.actor_content_type.model),
-                          args=(self.actor_object_id,))
+            url = reverse(
+                f'admin:{self.actor_content_type.app_label}_{self.actor_content_type.model}_change',
+                args=(self.actor_object_id,),
+            )
             return format_html("<a href='{url}'>{id}</a>", url=url, id=self.actor_object_id)
         except NoReverseMatch:
             return self.actor_object_id
 
     def action_object_url(self):
         try:
-            url = reverse("admin:{0}_{1}_change".format(self.action_object_content_type.app_label,
-                                                        self.action_content_type.model),
-                          args=(self.action_object_id,))
+            url = reverse(
+                f'admin:{self.action_object_content_type.app_label}_{self.action_content_type.model}_change',
+                args=(self.action_object_id,),
+            )
             return format_html("<a href='{url}'>{id}</a>", url=url, id=self.action_object_object_id)
         except NoReverseMatch:
             return self.action_object_object_id
 
     def target_object_url(self):
         try:
-            url = reverse("admin:{0}_{1}_change".format(self.target_content_type.app_label,
-                                                        self.target_content_type.model),
-                          args=(self.target_object_id,))
+            url = reverse(
+                f'admin:{self.target_content_type.app_label}_{self.target_content_type.model}_change',
+                args=(self.target_object_id,),
+            )
             return format_html("<a href='{url}'>{id}</a>", url=url, id=self.target_object_id)
         except NoReverseMatch:
             return self.target_object_id
@@ -321,10 +324,7 @@ def notify_handler(verb, **kwargs):
     kwargs.pop('signal', None)
     recipient = kwargs.pop('recipient')
     actor = kwargs.pop('sender')
-    optional_objs = [
-        (kwargs.pop(opt, None), opt)
-        for opt in ('target', 'action_object')
-    ]
+    optional_objs = [(kwargs.pop(opt, None), opt) for opt in ('target', 'action_object')]
     public = bool(kwargs.pop('public', True))
     description = kwargs.pop('description', None)
     timestamp = kwargs.pop('timestamp', timezone.now())
@@ -358,9 +358,12 @@ def notify_handler(verb, **kwargs):
         for obj, opt in optional_objs:
             if obj is not None:
                 for_concrete_model = kwargs.get(f'{opt}_for_concrete_model', True)
-                setattr(newnotify, '%s_object_id' % opt, obj.pk)
-                setattr(newnotify, '%s_content_type' % opt,
-                        ContentType.objects.get_for_model(obj, for_concrete_model=for_concrete_model))
+                setattr(newnotify, f'{opt}_object_id', obj.pk)
+                setattr(
+                    newnotify,
+                    f'{opt}_content_type',
+                    ContentType.objects.get_for_model(obj, for_concrete_model=for_concrete_model),
+                )
 
         if kwargs and EXTRA_DATA:
             # set kwargs as model column if available, put the rest in data

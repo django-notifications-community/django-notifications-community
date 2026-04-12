@@ -1,7 +1,7 @@
-''' Django notifications settings file '''
+"""Django notifications settings file"""
+
 # -*- coding: utf-8 -*-
 from django.conf import settings
-
 
 CONFIG_DEFAULTS = {
     'PAGINATE_BY': 20,
