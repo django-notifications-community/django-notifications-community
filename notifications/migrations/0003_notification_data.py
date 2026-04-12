@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 from django.db import models, migrations
-import jsonfield.fields
+
+try:
+    import jsonfield.fields
+except ImportError:
+    # jsonfield was replaced by Django's built-in JSONField in migration 0011.
+    from django.db import models as _models
+    class jsonfield:
+        class fields:
+            JSONField = _models.JSONField
 
 
 class Migration(migrations.Migration):
