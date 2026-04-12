@@ -3,7 +3,7 @@
 from django.core.cache import cache
 from django.template import Library
 from django.urls import reverse
-from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from notifications import settings
 
@@ -79,7 +79,7 @@ def register_notify_callbacks(
     for callback in callbacks.split(','):
         script += 'register_notifier(' + callback + ');'
     script += '</script>'
-    return format_html(script)
+    return mark_safe(script)
 
 
 @register.simple_tag(takes_context=True)
@@ -89,13 +89,13 @@ def live_notify_badge(context, badge_class='live_notify_badge'):
         return ''
 
     html = f"<span class='{badge_class}'>{get_cached_notification_unread_count(user)}</span>"
-    return format_html(html)
+    return mark_safe(html)
 
 
 @register.simple_tag
 def live_notify_list(list_class='live_notify_list'):
     html = f"<ul class='{list_class}'></ul>"
-    return format_html(html)
+    return mark_safe(html)
 
 
 def user_context(context):

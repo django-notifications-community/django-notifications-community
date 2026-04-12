@@ -12,21 +12,20 @@ from django.contrib.auth.models import Group, User
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.template import Context, Template
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.timezone import localtime
 from swapper import load_model
 
 from notifications.base.models import notify_handler
+from notifications.helpers import get_num_to_fetch, get_object_url
 from notifications.signals import notify
 from notifications.tests.test_models.models import Customer, TargetObject
-from notifications.utils import id2slug
+from notifications.utils import id2slug, slug2id
 
 Notification = load_model('notifications', 'Notification')
-
-from django.test import override_settings
-from django.urls import reverse
 
 MALICIOUS_NEXT_URLS = [
     'http://bla.com',
@@ -756,3 +755,161 @@ class AdminTest(TestCase):
             Notification.objects.filter(recipient=self.to_user, unread=True).count(),
             self.message_count,
         )
+
+
+class SlugUtilsTest(TestCase):
+    """Tests for id2slug / slug2id round-trip conversion."""
+
+    def test_round_trip(self):
+        for pk in (1, 42, 999999):
+            self.assertEqual(slug2id(id2slug(pk)), pk)
+
+    def test_slug_is_offset(self):
+        self.assertEqual(id2slug(0), 110909)
+        self.assertEqual(slug2id(110909), 0)
+
+    def test_negative_id_round_trips(self):
+        self.assertEqual(slug2id(id2slug(-5)), -5)
+
+
+class GetNumToFetchTest(TestCase):
+    """Tests for helpers.get_num_to_fetch boundary validation."""
+
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def _request(self, **query):
+        return self.factory.get('/', query)
+
+    def test_default_when_missing(self):
+        num = get_num_to_fetch(self._request())
+        self.assertEqual(num, 10)
+
+    def test_valid_int(self):
+        self.assertEqual(get_num_to_fetch(self._request(max='10')), 10)
+
+    def test_max_boundary(self):
+        self.assertEqual(get_num_to_fetch(self._request(max='100')), 100)
+
+    def test_over_max_falls_back(self):
+        self.assertEqual(get_num_to_fetch(self._request(max='101')), 10)
+
+    def test_zero_falls_back(self):
+        self.assertEqual(get_num_to_fetch(self._request(max='0')), 10)
+
+    def test_negative_falls_back(self):
+        self.assertEqual(get_num_to_fetch(self._request(max='-1')), 10)
+
+    def test_non_numeric_falls_back(self):
+        self.assertEqual(get_num_to_fetch(self._request(max='abc')), 10)
+
+
+class GetObjectUrlTest(TestCase):
+    """Tests for helpers.get_object_url dispatch logic."""
+
+    def setUp(self):
+        self.from_user = User.objects.create_user(username='from', password='pwd')
+        self.to_user = User.objects.create_user(username='to', password='pwd')
+        self.factory = RequestFactory()
+        self.request = self.factory.get('/')
+        self.request.user = self.to_user
+        notify.send(self.from_user, recipient=self.to_user, verb='tested')
+        self.notification = Notification.objects.get(recipient=self.to_user)
+
+    def test_get_url_for_notifications_takes_priority(self):
+        target = TargetObject.objects.create(name='t')
+        url = get_object_url(target, self.notification, self.request)
+        self.assertEqual(url, f'bar/{target.id}/')
+
+    def test_falls_back_to_get_absolute_url(self):
+        customer = Customer.objects.create(name='c')
+        url = get_object_url(customer, self.notification, self.request)
+        self.assertEqual(url, f'foo/{customer.id}/')
+
+    def test_returns_none_when_no_url_method(self):
+        url = get_object_url(self.from_user, self.notification, self.request)
+        self.assertIsNone(url)
+
+
+class NotificationInstanceMethodTest(TestCase):
+    """Tests for Notification model instance methods."""
+
+    def setUp(self):
+        self.from_user = User.objects.create_user(username='from', password='pwd')
+        self.to_user = User.objects.create_user(username='to', password='pwd')
+        notify.send(self.from_user, recipient=self.to_user, verb='commented', action_object=self.from_user)
+        self.notification = Notification.objects.get(recipient=self.to_user)
+
+    def test_slug_property(self):
+        self.assertEqual(self.notification.slug, id2slug(self.notification.id))
+
+    def test_mark_as_read_idempotent(self):
+        self.assertTrue(self.notification.unread)
+        self.notification.mark_as_read()
+        self.assertFalse(self.notification.unread)
+        # calling again should be a no-op (no extra save)
+        self.notification.mark_as_read()
+        self.assertFalse(self.notification.unread)
+
+    def test_mark_as_unread_idempotent(self):
+        self.notification.mark_as_read()
+        self.assertFalse(self.notification.unread)
+        self.notification.mark_as_unread()
+        self.assertTrue(self.notification.unread)
+        self.notification.mark_as_unread()
+        self.assertTrue(self.notification.unread)
+
+    def test_str_with_action_object_and_target(self):
+        target = Customer.objects.create(name='target_obj')
+        notify.send(self.from_user, recipient=self.to_user, verb='edited', action_object=self.from_user, target=target)
+        n = Notification.objects.filter(recipient=self.to_user, verb='edited').first()
+        text = str(n)
+        self.assertIn('edited', text)
+        self.assertIn('target_obj', text)
+
+    def test_str_with_target_only(self):
+        target = Customer.objects.create(name='tgt')
+        notify.send(self.from_user, recipient=self.to_user, verb='viewed', target=target)
+        n = Notification.objects.filter(recipient=self.to_user, verb='viewed').first()
+        text = str(n)
+        self.assertIn('viewed', text)
+        self.assertIn('tgt', text)
+        self.assertNotIn('None', text)
+
+    def test_str_verb_only(self):
+        notify.send(self.from_user, recipient=self.to_user, verb='logged in')
+        n = Notification.objects.filter(recipient=self.to_user, verb='logged in').first()
+        text = str(n)
+        self.assertIn('logged in', text)
+
+    def test_actor_object_url_returns_admin_link(self):
+        html = self.notification.actor_object_url()
+        self.assertIn(str(self.notification.actor_object_id), html)
+
+    def test_action_object_url_returns_admin_link(self):
+        html = self.notification.action_object_url()
+        self.assertIn(str(self.notification.action_object_object_id), html)
+
+
+class SentUnsentQuerySetTest(TestCase):
+    """Tests for sent/unsent queryset methods."""
+
+    def setUp(self):
+        self.from_user = User.objects.create_user(username='from', password='pwd')
+        self.to_user = User.objects.create_user(username='to', password='pwd')
+        for _ in range(5):
+            notify.send(self.from_user, recipient=self.to_user, verb='pinged')
+
+    def test_all_start_unsent(self):
+        self.assertEqual(Notification.objects.unsent().count(), 5)
+        self.assertEqual(Notification.objects.sent().count(), 0)
+
+    def test_mark_as_sent(self):
+        Notification.objects.mark_as_sent()
+        self.assertEqual(Notification.objects.sent().count(), 5)
+        self.assertEqual(Notification.objects.unsent().count(), 0)
+
+    def test_mark_as_unsent(self):
+        Notification.objects.mark_as_sent()
+        Notification.objects.mark_as_unsent()
+        self.assertEqual(Notification.objects.unsent().count(), 5)
