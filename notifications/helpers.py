@@ -32,6 +32,8 @@ def get_notification_list(request, method_name='all'):
     notification_list = []
     if method_name == 'all' and get_config()['SOFT_DELETE']:
         method_name = 'active'
+    mark_as_read = request.GET.get('mark_as_read')
+    notification_ids = []
     qs = getattr(request.user.notifications, method_name)().select_related(
         'actor_content_type', 'target_content_type', 'action_object_content_type'
     ).prefetch_related('actor', 'target', 'action_object')
@@ -59,6 +61,8 @@ def get_notification_list(request, method_name='all'):
         if notification.data:
             struct['data'] = notification.data
         notification_list.append(struct)
-        if request.GET.get('mark_as_read'):
-            notification.mark_as_read()
+        if mark_as_read:
+            notification_ids.append(notification.id)
+    if notification_ids:
+        qs.filter(id__in=notification_ids).update(unread=False)
     return notification_list
