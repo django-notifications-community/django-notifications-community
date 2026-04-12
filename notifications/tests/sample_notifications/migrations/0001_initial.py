@@ -4,7 +4,15 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
-import jsonfield.fields
+
+try:
+    import jsonfield.fields
+except ImportError:
+    # jsonfield was replaced by Django's built-in JSONField in migration 0011.
+    from django.db import models as _models
+    class jsonfield:
+        class fields:
+            JSONField = _models.JSONField
 
 
 class Migration(migrations.Migration):
