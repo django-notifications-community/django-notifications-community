@@ -571,6 +571,56 @@ class TagTest(TestCase):
         self.tag_test(template, context, output)
 
 
+class NotificationQueryCountTest(TestCase):
+    """Verify that listing notifications uses a bounded number of queries."""
+
+    def setUp(self):
+        self.message_count = 10
+        self.from_user = User.objects.create_user(username="from3", password="pwd", email="example@example.com")
+        self.to_user = User.objects.create_user(username="to3", password="pwd", email="example@example.com")
+        self.to_user.is_staff = True
+        self.to_user.save()
+        for _ in range(self.message_count):
+            notify.send(self.from_user, recipient=self.to_user, verb='commented', action_object=self.from_user)
+
+    def login(self):
+        self.client.login(username='to3', password='pwd')
+
+    def test_all_notifications_view_query_count(self):
+        self.login()
+        # Warm the ContentType cache
+        from django.contrib.contenttypes.models import ContentType
+        ContentType.objects.clear_cache()
+        self.client.get(reverse('notifications:all'))
+
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse('notifications:all'))
+            self.assertEqual(response.status_code, 200)
+        # session + user + count + paginated qs + prefetches
+        # should NOT scale with self.message_count
+        self.assertLessEqual(
+            len(ctx), 10,
+            f"All-notifications view used {len(ctx)} queries for {self.message_count} "
+            f"notifications (expected <= 10, not N+1)",
+        )
+
+    def test_unread_list_api_query_count(self):
+        self.login()
+        # warm caches
+        from django.contrib.contenttypes.models import ContentType
+        ContentType.objects.clear_cache()
+        self.client.get(reverse('notifications:live_unread_notification_list'))
+
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(reverse('notifications:live_unread_notification_list'))
+            self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(
+            len(ctx), 10,
+            f"Unread-list API used {len(ctx)} queries for {self.message_count} "
+            f"notifications (expected <= 10, not N+1)",
+        )
+
+
 class AdminTest(TestCase):
     app_name = "notifications"
     def setUp(self):
