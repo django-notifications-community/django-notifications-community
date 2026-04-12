@@ -235,7 +235,7 @@ class NotificationTestPages(TestCase):
 
         for index, notification in enumerate(self.to_user.notifications.all()):
             if index % 3 == 0:
-                response = self.client.get(reverse('notifications:mark_as_read', args=[id2slug(notification.id)]))
+                response = self.client.post(reverse('notifications:mark_as_read', args=[id2slug(notification.id)]))
                 self.assertEqual(response.status_code, 302)
 
         response = self.client.get(reverse('notifications:unread'))
@@ -243,7 +243,7 @@ class NotificationTestPages(TestCase):
         self.assertEqual(len(response.context['notifications']), len(self.to_user.notifications.unread()))
         self.assertTrue(len(response.context['notifications']) < self.message_count)
 
-        response = self.client.get(reverse('notifications:mark_all_as_read'))
+        response = self.client.post(reverse('notifications:mark_all_as_read'))
         self.assertRedirects(response, reverse('notifications:unread'))
         response = self.client.get(reverse('notifications:unread'))
         self.assertEqual(len(response.context['notifications']), len(self.to_user.notifications.unread()))
@@ -253,19 +253,19 @@ class NotificationTestPages(TestCase):
         self.login('to', 'pwd')
         query_parameters = '?var1=hello&var2=world'
 
-        response = self.client.get(reverse('notifications:mark_all_as_read'),data={
-            "next": reverse('notifications:unread')  + query_parameters,
-        })
-        self.assertRedirects(response, reverse('notifications:unread') + query_parameters)
-
-        slug = id2slug(self.to_user.notifications.first().id)
-        response = self.client.get(reverse('notifications:mark_as_read', args=[slug]), data={
+        response = self.client.post(reverse('notifications:mark_all_as_read'), data={
             "next": reverse('notifications:unread') + query_parameters,
         })
         self.assertRedirects(response, reverse('notifications:unread') + query_parameters)
 
         slug = id2slug(self.to_user.notifications.first().id)
-        response = self.client.get(reverse('notifications:mark_as_unread', args=[slug]), {
+        response = self.client.post(reverse('notifications:mark_as_read', args=[slug]), data={
+            "next": reverse('notifications:unread') + query_parameters,
+        })
+        self.assertRedirects(response, reverse('notifications:unread') + query_parameters)
+
+        slug = id2slug(self.to_user.notifications.first().id)
+        response = self.client.post(reverse('notifications:mark_as_unread', args=[slug]), {
             "next": reverse('notifications:unread') + query_parameters,
         })
         self.assertRedirects(response, reverse('notifications:unread') + query_parameters)
@@ -276,16 +276,30 @@ class NotificationTestPages(TestCase):
         query_parameters = '?var1=hello&var2=world'
 
         for next_url in MALICIOUS_NEXT_URLS:
-            response = self.client.get(reverse('notifications:mark_all_as_read'),data={
-                "next": next_url  + query_parameters,
+            response = self.client.post(reverse('notifications:mark_all_as_read'), data={
+                "next": next_url + query_parameters,
             })
             self.assertRedirects(response, reverse('notifications:unread'))
+
+    def test_state_changing_views_reject_get(self):
+        """State-changing views must reject GET with 405 Method Not Allowed."""
+        self.login('to', 'pwd')
+        slug = id2slug(self.to_user.notifications.first().id)
+
+        for url in [
+            reverse('notifications:mark_all_as_read'),
+            reverse('notifications:mark_as_read', args=[slug]),
+            reverse('notifications:mark_as_unread', args=[slug]),
+            reverse('notifications:delete', args=[slug]),
+        ]:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 405, f"GET {url} should be 405")
 
     def test_delete_messages_pages(self):
         self.login('to', 'pwd')
 
         slug = id2slug(self.to_user.notifications.first().id)
-        response = self.client.get(reverse('notifications:delete', args=[slug]))
+        response = self.client.post(reverse('notifications:delete', args=[slug]))
         self.assertRedirects(response, reverse('notifications:all'))
 
         response = self.client.get(reverse('notifications:all'))
@@ -305,7 +319,7 @@ class NotificationTestPages(TestCase):
         self.login('to', 'pwd')
 
         slug = id2slug(self.to_user.notifications.first().id)
-        response = self.client.get(reverse('notifications:delete', args=[slug]))
+        response = self.client.post(reverse('notifications:delete', args=[slug]))
         self.assertRedirects(response, reverse('notifications:all'))
 
         response = self.client.get(reverse('notifications:all'))

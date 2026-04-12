@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 from django.utils.encoding import iri_to_uri
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 from packaging.version import (
     parse as parse_version,  # pylint: disable=no-name-in-module,import-error
@@ -71,17 +72,19 @@ class UnreadNotificationsList(NotificationViewList):
         ).prefetch_related('actor', 'target', 'action_object')
 
 
+@require_POST
 @login_required
 def mark_all_as_read(request):
     request.user.notifications.mark_all_as_read()
 
-    _next = request.GET.get('next')
+    _next = request.POST.get('next')
 
     if _next and url_has_allowed_host_and_scheme(_next, settings.ALLOWED_HOSTS):
         return redirect(iri_to_uri(_next))
     return redirect('notifications:unread')
 
 
+@require_POST
 @login_required
 def mark_as_read(request, slug=None):
     notification_id = slug2id(slug)
@@ -90,7 +93,7 @@ def mark_as_read(request, slug=None):
         Notification, recipient=request.user, id=notification_id)
     notification.mark_as_read()
 
-    _next = request.GET.get('next')
+    _next = request.POST.get('next')
 
     if _next and url_has_allowed_host_and_scheme(_next, settings.ALLOWED_HOSTS):
         return redirect(iri_to_uri(_next))
@@ -98,6 +101,7 @@ def mark_as_read(request, slug=None):
     return redirect('notifications:unread')
 
 
+@require_POST
 @login_required
 def mark_as_unread(request, slug=None):
     notification_id = slug2id(slug)
@@ -106,7 +110,7 @@ def mark_as_unread(request, slug=None):
         Notification, recipient=request.user, id=notification_id)
     notification.mark_as_unread()
 
-    _next = request.GET.get('next')
+    _next = request.POST.get('next')
 
     if _next and url_has_allowed_host_and_scheme(_next, settings.ALLOWED_HOSTS):
         return redirect(iri_to_uri(_next))
@@ -114,6 +118,7 @@ def mark_as_unread(request, slug=None):
     return redirect('notifications:unread')
 
 
+@require_POST
 @login_required
 def delete(request, slug=None):
     notification_id = slug2id(slug)
@@ -127,7 +132,7 @@ def delete(request, slug=None):
     else:
         notification.delete()
 
-    _next = request.GET.get('next')
+    _next = request.POST.get('next')
 
     if _next and url_has_allowed_host_and_scheme(_next, settings.ALLOWED_HOSTS):
         return redirect(iri_to_uri(_next))
