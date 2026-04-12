@@ -10,7 +10,11 @@ class Config(AppConfig):
 
     def ready(self):
         super().ready()
-        # this is for backwards compatibility
-        import notifications.signals
+        from notifications.base.models import notify_handler
+        from notifications.signals import notify
 
-        notifications.notify = notifications.signals.notify
+        # backwards compatibility: expose notify on the package
+        import notifications
+        notifications.notify = notify
+
+        notify.connect(notify_handler, dispatch_uid='notifications.models.notification')
