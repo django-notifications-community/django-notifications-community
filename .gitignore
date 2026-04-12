@@ -14,3 +14,4 @@ htmlcov
 .ruff_cache/
 test.sqlite3
 settings.json
+uv.lock
