@@ -535,12 +535,12 @@ class NotificationTestPages(TestCase):
         )
         content = response.content.decode('utf-8')
 
-        # register_notify_callbacks produces a <script> with config variables
-        self.assertIn('<script type="text/javascript">', content)
-        self.assertIn("notify_badge_class='live_notify_badge'", content)
-        self.assertIn("notify_api_url=", content)
-        self.assertIn('register_notifier(fill_notification_menu)', content)
-        self.assertIn('register_notifier(fill_notification_badge)', content)
+        # register_notify_callbacks produces a JSON config block
+        self.assertIn('<script type="application/json" id="notify-config"', content)
+        self.assertIn('"badgeClass":"live_notify_badge"', content)
+        self.assertIn('"apiUrl":', content)
+        self.assertIn('"fill_notification_menu"', content)
+        self.assertIn('"fill_notification_badge"', content)
 
         # live_notify_badge renders a span with the unread count
         self.assertIn("<span class='live_notify_badge'>", content)

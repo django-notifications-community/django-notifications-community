@@ -13,31 +13,35 @@ const registered_functions = [];
 
 function fill_notification_badge(data) {
     for (const badge of document.getElementsByClassName(notify_badge_class)) {
-        badge.innerHTML = data.unread_count;
+        badge.textContent = data.unread_count;
     }
 }
 
 function fill_notification_list(data) {
-    const messages = data.unread_list.map((item) => {
-        let message = '';
+    const fragment = document.createDocumentFragment();
 
-        if (typeof item.actor !== 'undefined') {
+    for (const item of data.unread_list) {
+        let message = '';
+        if (item.actor) {
             message = item.actor;
         }
-        if (typeof item.verb !== 'undefined') {
+        if (item.verb) {
             message += ` ${item.verb}`;
         }
-        if (typeof item.target !== 'undefined') {
+        if (item.target) {
             message += ` ${item.target}`;
         }
-        if (typeof item.timestamp !== 'undefined') {
+        if (item.timestamp) {
             message += ` ${item.timestamp}`;
         }
-        return `<li>${message}</li>`;
-    }).join('');
+        const li = document.createElement('li');
+        li.textContent = message;
+        fragment.appendChild(li);
+    }
 
     for (const menu of document.getElementsByClassName(notify_menu_class)) {
-        menu.innerHTML = messages;
+        menu.innerHTML = '';
+        menu.appendChild(fragment.cloneNode(true));
     }
 }
 
@@ -45,39 +49,86 @@ function register_notifier(func) {
     registered_functions.push(func);
 }
 
-function fetch_api_data() {
+async function fetch_api_data() {
     if (registered_functions.length > 0) {
-        const r = new XMLHttpRequest();
         let params = `?max=${notify_fetch_count}`;
-
         if (notify_mark_as_read) {
             params += '&mark_as_read=true';
         }
 
-        r.addEventListener('readystatechange', function(event) {
-            if (this.readyState === 4) {
-                if (this.status === 200) {
-                    consecutive_misfires = 0;
-                    const data = JSON.parse(r.responseText);
-                    for (const func of registered_functions) {
-                        func(data);
-                    }
-                } else {
-                    consecutive_misfires++;
+        try {
+            const response = await fetch(notify_api_url + params);
+            if (response.ok) {
+                consecutive_misfires = 0;
+                const data = await response.json();
+                for (const func of registered_functions) {
+                    func(data);
                 }
+            } else {
+                consecutive_misfires++;
             }
-        });
-        r.open("GET", notify_api_url + params, true);
-        r.send();
+        } catch (e) {
+            consecutive_misfires++;
+        }
     }
+
     if (consecutive_misfires < 10) {
         setTimeout(fetch_api_data, notify_refresh_period);
     } else {
         for (const badge of document.getElementsByClassName(notify_badge_class)) {
-            badge.innerHTML = "!";
-            badge.title = "Connection lost!";
+            badge.textContent = '!';
+            badge.title = 'Connection lost!';
         }
     }
 }
 
-setTimeout(fetch_api_data, 1000);
+function _resolveCallback(name) {
+    const parts = name.split('.');
+    let obj = window;
+    for (const part of parts) {
+        obj = obj[part];
+        if (typeof obj === 'undefined') {
+            return undefined;
+        }
+    }
+    return obj;
+}
+
+function _initNotifyConfig() {
+    const el = document.getElementById('notify-config');
+    if (!el) {
+        return;
+    }
+    let config;
+    try {
+        config = JSON.parse(el.textContent);
+    } catch (e) {
+        return;
+    }
+
+    notify_badge_class = config.badgeClass;
+    notify_menu_class = config.menuClass;
+    notify_api_url = config.apiUrl;
+    notify_fetch_count = config.fetchCount;
+    notify_unread_url = config.unreadUrl;
+    notify_mark_all_unread_url = config.markAllUnreadUrl;
+    notify_refresh_period = config.refreshPeriod;
+    notify_mark_as_read = config.markAsRead;
+
+    if (config.callbacks) {
+        for (const name of config.callbacks) {
+            const fn = _resolveCallback(name);
+            if (typeof fn === 'function') {
+                register_notifier(fn);
+            }
+        }
+    }
+
+    setTimeout(fetch_api_data, 1000);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initNotifyConfig);
+} else {
+    _initNotifyConfig();
+}

@@ -1,5 +1,8 @@
 """Django notifications template tags file"""
 
+import json
+import re
+
 from django.core.cache import cache
 from django.template import Library
 from django.urls import reverse
@@ -33,7 +36,10 @@ def has_notification(user):
     return False
 
 
-# Requires vanilla-js framework - http://vanilla-js.com/
+_JS_IDENTIFIER_RE = re.compile(r'^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$')
+_JSON_SCRIPT_ESCAPES = {ord('>'): '\\u003E', ord('<'): '\\u003C', ord('&'): '\\u0026'}
+
+
 @register.simple_tag
 def register_notify_callbacks(
     badge_class='live_notify_badge',
@@ -53,34 +59,46 @@ def register_notify_callbacks(
         api_url = reverse('notifications:live_unread_notification_count')
     else:
         return ''
-    definitions = """
-        notify_badge_class='{badge_class}';
-        notify_menu_class='{menu_class}';
-        notify_api_url='{api_url}';
-        notify_fetch_count='{fetch_count}';
-        notify_unread_url='{unread_url}';
-        notify_mark_all_unread_url='{mark_all_unread_url}';
-        notify_refresh_period={refresh};
-        notify_mark_as_read={mark_as_read};
-    """.format(
-        badge_class=badge_class,
-        menu_class=menu_class,
-        refresh=refresh_period,
-        api_url=api_url,
-        unread_url=reverse('notifications:unread'),
-        mark_all_unread_url=reverse('notifications:mark_all_as_read'),
-        fetch_count=fetch,
-        mark_as_read=str(mark_as_read).lower(),
+
+    callback_list = []
+    if callbacks:
+        for cb in callbacks.split(','):
+            cb = cb.strip()
+            if cb:
+                if not _JS_IDENTIFIER_RE.match(cb):
+                    raise ValueError(
+                        f"Invalid callback name: {cb!r}. "
+                        "Must be a valid JavaScript identifier."
+                    )
+                callback_list.append(cb)
+
+    config = {
+        'badgeClass': str(badge_class),
+        'menuClass': str(menu_class),
+        'apiUrl': api_url,
+        'fetchCount': int(fetch),
+        'unreadUrl': reverse('notifications:unread'),
+        'markAllUnreadUrl': reverse('notifications:mark_all_as_read'),
+        'refreshPeriod': refresh_period,
+        'markAsRead': str(mark_as_read).lower() == 'true',
+        'callbacks': callback_list,
+    }
+
+    # mark_safe is safe here: json.dumps produces valid JSON, and
+    # _JSON_SCRIPT_ESCAPES neutralizes </script> injection. The tag
+    # type="application/json" is non-executable by the browser.
+    config_json = json.dumps(config, separators=(',', ':'))
+    config_json = config_json.translate(_JSON_SCRIPT_ESCAPES)
+
+    if nonce:
+        return format_html(
+            '<script type="application/json" id="notify-config" nonce="{}">{}</script>',
+            nonce, mark_safe(config_json),
+        )
+    return format_html(
+        '<script type="application/json" id="notify-config">{}</script>',
+        mark_safe(config_json),
     )
-
-    # add a nonce value to the script tag if one is provided
-    nonce_str = f' nonce="{nonce}"' if nonce else ''
-
-    script = f'<script type="text/javascript"{nonce_str}>' + definitions
-    for callback in callbacks.split(','):
-        script += 'register_notifier(' + callback + ');'
-    script += '</script>'
-    return mark_safe(script)
 
 
 @register.simple_tag(takes_context=True)
