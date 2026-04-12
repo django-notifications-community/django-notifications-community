@@ -58,13 +58,17 @@ class AllNotificationsList(NotificationViewList):
             qset = self.request.user.notifications.active()
         else:
             qset = self.request.user.notifications.all()
-        return qset
+        return qset.select_related(
+            'actor_content_type', 'target_content_type', 'action_object_content_type'
+        ).prefetch_related('actor', 'target', 'action_object')
 
 
 class UnreadNotificationsList(NotificationViewList):
 
     def get_queryset(self):
-        return self.request.user.notifications.unread()
+        return self.request.user.notifications.unread().select_related(
+            'actor_content_type', 'target_content_type', 'action_object_content_type'
+        ).prefetch_related('actor', 'target', 'action_object')
 
 
 @login_required
