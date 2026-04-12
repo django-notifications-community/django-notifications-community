@@ -499,8 +499,9 @@ class NotificationTestPages(TestCase):
 
     def test_unread_all_objects(self):
         """
-        Test notification with all objects (actor, target, action_object)
-        Test that object URLs are in the output.
+        Test notification with all objects (actor, target, action_object).
+        Verifies object URLs are in the output and that get_url_for_notifications
+        takes priority over get_absolute_url when both are defined.
         """
         self.login('to', 'pwd')
         Notification.objects.filter(recipient=self.to_user).mark_all_as_read()
@@ -529,9 +530,24 @@ class NotificationTestPages(TestCase):
         request = factory.get('/notification/live_updater')
         request.user = self.to_user
 
-        render(request, 'notifications/test_tags.html', {'request': request, 'nonce': 'nonce-T5esDNXMnDe5lKMQ6ZzTUw=='})
+        response = render(
+            request, 'notifications/test_tags.html', {'request': request, 'nonce': 'nonce-T5esDNXMnDe5lKMQ6ZzTUw=='}
+        )
+        content = response.content.decode('utf-8')
 
-        # TODO: Add more tests to check what is being output.
+        # register_notify_callbacks produces a <script> with config variables
+        self.assertIn('<script type="text/javascript">', content)
+        self.assertIn("notify_badge_class='live_notify_badge'", content)
+        self.assertIn("notify_api_url=", content)
+        self.assertIn('register_notifier(fill_notification_menu)', content)
+        self.assertIn('register_notifier(fill_notification_badge)', content)
+
+        # live_notify_badge renders a span with the unread count
+        self.assertIn("<span class='live_notify_badge'>", content)
+        self.assertIn(str(self.message_count), content)
+
+        # live_notify_list renders an empty ul
+        self.assertIn("<ul class='live_notify_list'></ul>", content)
 
     def test_anon_user_gets_nothing(self):
         response = self.client.post(reverse('notifications:live_unread_notification_count'))
@@ -692,6 +708,7 @@ class AdminTest(TestCase):
         self.to_user.is_staff = True
         self.to_user.is_superuser = True
         self.to_user.save()
+        self.client.login(username='to', password='pwd')
         for _ in range(self.message_count):
             notify.send(
                 self.from_user,
@@ -701,8 +718,41 @@ class AdminTest(TestCase):
             )
 
     def test_list(self):
-        self.client.login(username='to', password='pwd')
-
         with self.assertNumQueries(7):
             response = self.client.get(reverse(f'admin:{self.app_name}_notification_changelist'))
             self.assertEqual(response.status_code, 200, response.content)
+
+    def test_list_display_columns(self):
+        """Admin changelist renders the expected columns."""
+        response = self.client.get(reverse(f'admin:{self.app_name}_notification_changelist'))
+        content = response.content.decode('utf-8')
+        for column in ('recipient', 'actor', 'level', 'target', 'unread', 'public'):
+            self.assertIn(f'column-{column}', content)
+
+    def test_list_filters(self):
+        """Admin changelist exposes the expected filters."""
+        response = self.client.get(reverse(f'admin:{self.app_name}_notification_changelist'))
+        content = response.content.decode('utf-8')
+        for filter_name in ('level', 'unread', 'public', 'timestamp'):
+            self.assertIn(f'data-filter-title="{filter_name}"', content)
+
+    def test_mark_unread_action(self):
+        """The mark_unread admin action sets selected notifications to unread."""
+        # Mark all as read first
+        Notification.objects.filter(recipient=self.to_user).update(unread=False)
+        self.assertEqual(Notification.objects.filter(recipient=self.to_user, unread=True).count(), 0)
+
+        # Select all and apply the mark_unread action
+        notification_ids = list(Notification.objects.filter(recipient=self.to_user).values_list('pk', flat=True))
+        self.client.post(
+            reverse(f'admin:{self.app_name}_notification_changelist'),
+            {
+                'action': 'mark_unread',
+                '_selected_action': notification_ids,
+                'index': '0',
+            },
+        )
+        self.assertEqual(
+            Notification.objects.filter(recipient=self.to_user, unread=True).count(),
+            self.message_count,
+        )
