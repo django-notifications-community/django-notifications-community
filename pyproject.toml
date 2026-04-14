@@ -19,7 +19,6 @@ maintainers = [
 ]
 dependencies = [
     "django>=4.2,<5.3",
-    "django-model-utils>=3.1.0",
     "swapper",
 ]
 classifiers = [

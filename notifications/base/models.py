@@ -9,7 +9,6 @@ from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from model_utils import Choices
 from swapper import load_model
 
 from notifications import settings as notifications_settings
@@ -159,7 +158,12 @@ class AbstractNotification(models.Model):
 
     """
 
-    LEVELS = Choices('success', 'info', 'warning', 'error')
+    class LEVELS(models.TextChoices):
+        success = 'success', _('success')
+        info = 'info', _('info')
+        warning = 'warning', _('warning')
+        error = 'error', _('error')
+
     level = models.CharField(_('level'), choices=LEVELS, default=LEVELS.info, max_length=20)
 
     recipient = models.ForeignKey(
