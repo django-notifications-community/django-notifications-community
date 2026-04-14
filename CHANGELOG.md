@@ -8,6 +8,18 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.11.3 (unreleased)
+
+  - Silenced `RemovedInDjango51Warning: 'index_together' is deprecated`
+    that fired on every test DB setup under Django 4.2. Added migration
+    0013, a squash (via `replaces`) of 0008, 0009, and 0010 that swaps
+    the original `AlterIndexTogether` + `RenameIndex` pair for a single
+    `AddIndex` named directly to the final index name. New installs no
+    longer populate `index_together` in migration state, so the warning
+    never fires. Existing installs have all three replaced migrations
+    already applied, so Django records the squash as applied with no DB
+    work.
+
 ## 1.11.1 (2026-04-12)
 
   - Removed dead Python 2 and Django < 2.0 compatibility code (#24)
