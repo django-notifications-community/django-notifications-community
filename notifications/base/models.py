@@ -159,10 +159,10 @@ class AbstractNotification(models.Model):
     """
 
     class LEVELS(models.TextChoices):
-        success = 'success', _('success')
-        info = 'info', _('info')
-        warning = 'warning', _('warning')
-        error = 'error', _('error')
+        success = 'success', _('Success')
+        info = 'info', _('Info')
+        warning = 'warning', _('Warning')
+        error = 'error', _('Error')
 
     level = models.CharField(_('level'), choices=LEVELS.choices, default=LEVELS.info, max_length=20)
 
