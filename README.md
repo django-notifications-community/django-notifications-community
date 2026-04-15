@@ -40,7 +40,7 @@
 - [Template tags](#template-tags)
 - [Live-updater API](#live-updater-api)
 - [Serializing the notification model](#serializing-the-notification-model)
-- [`AbstractNotification` model](#abstractnotification-model)
+- [AbstractNotification model](#abstractnotification-model)
 - [Notes](#notes)
 - [Credits](#credits)
 - [Contributing](#contributing)
@@ -421,7 +421,7 @@ class NotificationSerializer(serializers.Serializer):
 
 Thanks to @DaWy.
 
-## `AbstractNotification` model
+## AbstractNotification model
 
 If you need to extend the notification model with extra fields, subclass
 `AbstractNotification`:
