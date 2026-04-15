@@ -10,13 +10,13 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
-from swapper import load_model
 
 from notifications import settings as notification_settings
 from notifications.helpers import get_notification_list
+from notifications.swappable import load_notification_model
 from notifications.utils import slug2id
 
-Notification = load_model('notifications', 'Notification')
+Notification = load_notification_model()
 
 
 class NotificationViewList(ListView):

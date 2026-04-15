@@ -1,9 +1,9 @@
-import swapper
 from django.contrib import admin
 
 from notifications.base.admin import AbstractNotificationAdmin
+from notifications.swappable import load_notification_model
 
-Notification = swapper.load_model('notifications', 'Notification')
+Notification = load_notification_model()
 
 
 @admin.register(Notification)

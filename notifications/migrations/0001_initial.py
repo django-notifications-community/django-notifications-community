@@ -2,7 +2,6 @@
 from django.db import models, migrations
 import django.utils.timezone
 from django.conf import settings
-import swapper
 
 
 class Migration(migrations.Migration):
@@ -32,7 +31,7 @@ class Migration(migrations.Migration):
                 ('target_content_type', models.ForeignKey(related_name='notify_target', blank=True, to='contenttypes.ContentType', null=True, on_delete=models.CASCADE)),
             ],
             options={
-                'swappable': swapper.swappable_setting('notifications', 'Notification'),
+                'swappable': 'NOTIFICATIONS_NOTIFICATION_MODEL',
                 'ordering': ('-timestamp',),
             },
             bases=(models.Model,),
