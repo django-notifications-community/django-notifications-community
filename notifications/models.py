@@ -1,12 +1,11 @@
-from swapper import swappable_setting
-
 from .base.models import AbstractNotification, notify_handler  # noqa
+from .swappable import NOTIFICATION_MODEL_SETTING
 
 
 class Notification(AbstractNotification):
     class Meta(AbstractNotification.Meta):
         abstract = False
-        swappable = swappable_setting('notifications', 'Notification')
+        swappable = NOTIFICATION_MODEL_SETTING
 
     def naturalday(self):
         """

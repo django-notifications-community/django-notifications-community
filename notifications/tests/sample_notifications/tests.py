@@ -1,15 +1,15 @@
 import os
 from unittest import skipUnless
 
-import swapper
 from django.contrib.auth.models import User
 from django.test import TestCase
 
 from notifications.signals import notify
+from notifications.swappable import load_notification_model
 from notifications.tests.tests import AdminTest as BaseAdminTest
 from notifications.tests.tests import NotificationTest as BaseNotificationTest
 
-Notification = swapper.load_model('notifications', 'Notification')
+Notification = load_notification_model()
 
 
 @skipUnless(os.environ.get('SAMPLE_APP', False), 'Running tests on standard django-notifications models')

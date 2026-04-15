@@ -9,9 +9,9 @@ from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from swapper import load_model
 
 from notifications import settings as notifications_settings
+from notifications.swappable import load_notification_model
 from notifications.utils import id2slug
 
 
@@ -313,7 +313,7 @@ def notify_handler(verb, **kwargs):
     public = bool(kwargs.pop('public', True))
     description = kwargs.pop('description', None)
     timestamp = kwargs.pop('timestamp', timezone.now())
-    Notification = load_model('notifications', 'Notification')
+    Notification = load_notification_model()
     level = kwargs.pop('level', Notification.LEVELS.info)
     actor_for_concrete_model = kwargs.pop('actor_for_concrete_model', True)
 

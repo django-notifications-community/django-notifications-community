@@ -1,11 +1,11 @@
 """Django notifications admin file"""
 from django.contrib import admin
 from django.utils.translation import gettext_lazy
-from swapper import load_model
 
 from notifications.base.admin import AbstractNotificationAdmin
+from notifications.swappable import load_notification_model
 
-Notification = load_model('notifications', 'Notification')
+Notification = load_notification_model()
 
 
 def mark_unread(modeladmin, request, queryset):

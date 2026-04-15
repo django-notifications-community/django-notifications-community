@@ -19,7 +19,6 @@ maintainers = [
 ]
 dependencies = [
     "django>=4.2,<5.3",
-    "swapper",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

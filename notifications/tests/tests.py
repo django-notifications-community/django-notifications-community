@@ -17,15 +17,14 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.timezone import localtime
-from swapper import load_model
-
 from notifications.base.models import notify_handler
 from notifications.helpers import get_num_to_fetch, get_object_url
 from notifications.signals import notify
+from notifications.swappable import load_notification_model
 from notifications.tests.test_models.models import Customer, TargetObject
 from notifications.utils import id2slug, slug2id
 
-Notification = load_model('notifications', 'Notification')
+Notification = load_notification_model()
 
 MALICIOUS_NEXT_URLS = [
     'http://bla.com',
