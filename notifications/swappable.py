@@ -1,10 +1,7 @@
-"""Internal helpers for the swappable Notification model.
+"""Resolve the Notification model, honoring ``NOTIFICATIONS_NOTIFICATION_MODEL``.
 
-Users configure the swap by pointing
-``NOTIFICATIONS_NOTIFICATION_MODEL`` at their own model in settings,
-e.g. ``"my_app.Notification"``. This mirrors the convention Django
-itself uses for ``AUTH_USER_MODEL``: a single setting read lazily via
-``getattr`` so that ``@override_settings`` keeps working in tests.
+Same convention as ``AUTH_USER_MODEL``: users point the setting at
+their own model (e.g. ``"my_app.Notification"``) to swap it in.
 """
 from django.apps import apps
 from django.conf import settings
