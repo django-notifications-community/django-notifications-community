@@ -2,6 +2,8 @@
 
 [![tests](https://github.com/django-notifications-community/django-notifications-community/actions/workflows/test.yml/badge.svg)](https://github.com/django-notifications-community/django-notifications-community/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/django-notifications-community.svg)](https://pypi.org/project/django-notifications-community/)
+[![Python versions](https://img.shields.io/pypi/pyversions/django-notifications-community.svg)](https://pypi.org/project/django-notifications-community/)
+[![Django versions](https://img.shields.io/pypi/djversions/django-notifications-community.svg?label=django)](https://pypi.org/project/django-notifications-community/)
 
 > **This is a community-maintained fork of
 > [django-notifications/django-notifications](https://github.com/django-notifications/django-notifications).**
@@ -27,42 +29,59 @@
 > pip install django-notifications-community
 > ```
 
-[django-notifications](https://github.com/django-notifications/django-notifications) is a GitHub notification alike app for Django, it was derived from [django-activity-stream](https://github.com/justquick/django-activity-stream)
+## Contents
 
-The major difference between `django-notifications` and `django-activity-stream`:
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Settings](#settings)
+- [Generating notifications](#generating-notifications)
+- [QuerySet and model methods](#queryset-and-model-methods)
+- [Template tags](#template-tags)
+- [Live-updater API](#live-updater-api)
+- [Serializing the notification model](#serializing-the-notification-model)
+- [`AbstractNotification` model](#abstractnotification-model)
+- [Notes](#notes)
+- [Credits](#credits)
+- [Contributing](#contributing)
 
-- `django-notifications` is for building something like Github "Notifications"
-- While `django-activity-stream` is for building Github "News Feed"
+## Overview
 
-Notifications are actually actions events, which are categorized by four main components.
+[django-notifications](https://github.com/django-notifications/django-notifications)
+is a GitHub-style notifications app for Django, derived from
+[django-activity-stream](https://github.com/justquick/django-activity-stream).
 
--   `Actor`. The object that performed the activity.
--   `Verb`. The verb phrase that identifies the action of the activity.
--   `Action Object`. *(Optional)* The object linked to the action
-    itself.
--   `Target`. *(Optional)* The object to which the activity was
-    performed.
+The major difference between `django-notifications` and
+`django-activity-stream`:
 
-`Actor`, `Action Object` and `Target` are `GenericForeignKeys` to any
-arbitrary Django object. An action is a description of an action that
-was performed (`Verb`) at some instant in time by some `Actor` on some
-optional `Target` that results in an `Action Object` getting
-created/updated/deleted.
+- `django-notifications` is for building something like GitHub "Notifications".
+- `django-activity-stream` is for building a GitHub "News Feed".
 
-For example: [justquick](https://github.com/justquick/) `(actor)`
-*closed* `(verb)` [issue
-2](https://github.com/justquick/django-activity-stream/issues/2)
+A notification is an action event, categorized by four components:
+
+- `Actor` — the object that performed the activity.
+- `Verb` — the verb phrase that identifies the action.
+- `Action Object` — *(optional)* the object linked to the action itself.
+- `Target` — *(optional)* the object the activity was performed on.
+
+`Actor`, `Action Object`, and `Target` are `GenericForeignKey`s to any
+arbitrary Django object. An action describes something that was performed
+(`Verb`) at some instant in time by an `Actor` on an optional `Target`,
+resulting in an `Action Object` being created, updated, or deleted.
+
+For example: [justquick](https://github.com/justquick/) `(actor)` *closed*
+`(verb)` [issue 2](https://github.com/justquick/django-activity-stream/issues/2)
 `(action_object)` on
 [activity-stream](https://github.com/justquick/django-activity-stream/)
-`(target)` 12 hours ago
+`(target)` 12 hours ago.
 
-Nomenclature of this specification is based on the Activity Streams
-Spec: <http://activitystrea.ms/specs/atom/1.0/>
+Nomenclature is based on the Activity Streams spec:
+<https://activitystrea.ms/specs/atom/1.0/>.
 
 ## Requirements
 
--   Python 3.10, 3.11, 3.12, 3.13
--   Django 4.2, 5.1, 5.2
+- Python 3.10, 3.11, 3.12, 3.13
+- Django 4.2, 5.1, 5.2
 
 ## Installation
 
@@ -78,25 +97,19 @@ or with [uv](https://docs.astral.sh/uv/):
 uv add django-notifications-community
 ```
 
-[django-model-utils](https://pypi.org/project/django-model-utils/)
-will be installed automatically (required for the pass-through QuerySet manager).
-
-Then to add the Django Notifications to your project add the app
-`notifications` to your `INSTALLED_APPS` and urlconf.
-
-The app should go somewhere after all the apps that are going to be
-generating notifications like `django.contrib.auth`
+Add `notifications` to `INSTALLED_APPS`. It should come after any apps that
+generate notifications (like `django.contrib.auth`):
 
 ```python
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.auth',
     ...
     'notifications',
     ...
-)
+]
 ```
 
-Add the notifications urls to your urlconf:
+Include the notifications URLs in your urlconf:
 
 ```python
 urlpatterns = [
@@ -106,12 +119,53 @@ urlpatterns = [
 ]
 ```
 
-To run schema migration, execute
-`python manage.py migrate notifications`.
+Run the migrations:
 
-## Generating Notifications
+```bash
+python manage.py migrate notifications
+```
 
-Generating notifications is probably best done in a separate signal.
+## Settings
+
+All configuration lives in a single `DJANGO_NOTIFICATIONS_CONFIG` dict in
+`settings.py`. Defaults:
+
+```python
+DJANGO_NOTIFICATIONS_CONFIG = {
+    'PAGINATE_BY': 20,
+    'USE_JSONFIELD': False,
+    'SOFT_DELETE': False,
+    'NUM_TO_FETCH': 10,
+    'CACHE_TIMEOUT': 2,
+}
+```
+
+| Key             | Default | Purpose                                                                                           |
+|-----------------|---------|---------------------------------------------------------------------------------------------------|
+| `PAGINATE_BY`   | `20`    | Page size for the list views.                                                                     |
+| `USE_JSONFIELD` | `False` | Persist extra kwargs passed to `notify.send()` on `Notification.data`.                            |
+| `SOFT_DELETE`   | `False` | Flip the delete view from row removal to setting `deleted=True`. See [Soft delete](#soft-delete). |
+| `NUM_TO_FETCH`  | `10`    | Default page size for the live-updater JSON endpoints.                                            |
+| `CACHE_TIMEOUT` | `2`     | Seconds to cache `user.notifications.unread().count`. `0` disables caching.                       |
+
+### Extra data
+
+With `USE_JSONFIELD` on, any extra keyword arguments passed to
+`notify.send(...)` are stored on the notification's `.data` attribute, JSON
+serialized. Pass only JSON-serializable values.
+
+### Soft delete
+
+With `SOFT_DELETE` on, `delete/<int:slug>/` flips `Notification.deleted` to
+`True` instead of removing the row. The `unread` and `read` querysets gain a
+`deleted=False` filter, and the `deleted`, `active`, `mark_all_as_deleted`,
+and `mark_all_as_active` queryset methods become usable. See
+[QuerySet methods](#queryset-methods) below.
+
+## Generating notifications
+
+The typical pattern is to send a notification from a signal handler on one
+of your own models:
 
 ```python
 from django.db.models.signals import post_save
@@ -123,8 +177,8 @@ def my_handler(sender, instance, created, **kwargs):
 
 post_save.connect(my_handler, sender=MyModel)
 ```
-To generate an notification anywhere in your code, simply import the
-notify signal and send it with your actor, recipient, and verb.
+
+You can also call `notify.send()` directly anywhere in your code:
 
 ```python
 from notifications.signals import notify
@@ -132,300 +186,204 @@ from notifications.signals import notify
 notify.send(user, recipient=user, verb='you reached level 10')
 ```
 
-The complete syntax is.
+> **Note:** `notify.send()` uses `bulk_create` internally, so `post_save`
+> handlers registered on the `Notification` model itself will not fire. See
+> [Bulk creation and signals](#bulk-creation-and-signals).
+
+Full signature:
 
 ```python
-notify.send(actor, recipient, verb, action_object, target, level, description, public, timestamp, **kwargs)
+notify.send(
+    actor, recipient, verb,
+    action_object, target,
+    level, description, public, timestamp,
+    **kwargs,
+)
 ```
 
 Arguments:
 
--   **actor**: An object of any type. (Required) Note: Use
-    **sender** instead of **actor** if you intend to use keyword
-    arguments
--   **recipient**: A **Group** or a **User QuerySet** or a list of
-    **User**. (Required)
--   **verb**: An string. (Required)
--   **action\_object**: An object of any type. (Optional)
--   **target**: An object of any type. (Optional)
--   **level**: One of Notification.LEVELS (\'success\', \'info\',
-    \'warning\', \'error\') (default=info). (Optional)
--   **description**: An string. (Optional)
--   **public**: An boolean (default=True). (Optional)
--   **timestamp**: An tzinfo (default=timezone.now()). (Optional)
+- **actor** *(required)* — any object. Use `sender` instead of `actor` if
+  you're passing keyword arguments.
+- **recipient** *(required)* — a single `User`, a `Group`, a `User`
+  queryset, or a list of `User`s.
+- **verb** *(required)* — a string.
+- **action_object** — any object.
+- **target** — any object.
+- **level** — one of `Notification.LEVELS` (`'success'`, `'info'`,
+  `'warning'`, `'error'`). Defaults to `'info'`.
+- **description** — a string.
+- **public** — a bool. Defaults to `True`.
+- **timestamp** — a `datetime`. Defaults to `timezone.now()`.
 
-### Extra data
-
-You can attach arbitrary data to your notifications by doing the
-following:
-
--   Add to your settings.py:
-    `DJANGO_NOTIFICATIONS_CONFIG = { 'USE_JSONFIELD': True}`
-
-Then, any extra arguments you pass to `notify.send(...)` will be
-attached to the `.data` attribute of the notification object. These will
-be serialised using the JSONField\'s serialiser, so you may need to take
-that into account: using only objects that will be serialised is a good
-idea.
-
-### Soft delete
-
-By default, `delete/(?P<slug>\d+)/` deletes specified notification
-record from DB. You can change this behaviour to \"mark
-`Notification.deleted` field as `True`\" by:
-
--   Add to your settings.py:
-    `DJANGO_NOTIFICATIONS_CONFIG = { 'SOFT_DELETE': True}`
-
-With this option, QuerySet methods `unread` and `read` contain one more
-filter: `deleted=False`. Meanwhile, QuerySet methods `deleted`,
-`active`, `mark_all_as_deleted`, `mark_all_as_active` are turned on. See
-more details in QuerySet methods section.
-
-## API
+## QuerySet and model methods
 
 ### QuerySet methods
 
-Using `django-model-utils`, we get the ability to add queryset methods
-to not only the manager, but to all querysets that will be used,
-including related objects. This enables us to do things like:
+The `Notification` manager is built from a custom `QuerySet` via Django's
+`QuerySet.as_manager()`, so queryset methods are available on the manager,
+on related managers, and on any further-filtered queryset:
 
 ```python
-    Notification.objects.unread()
+Notification.objects.unread()
+
+user = User.objects.get(pk=pk)
+user.notifications.unread()
 ```
 
-which returns all unread notifications. To do this for a single user, we
-can do:
+Available methods:
 
-```python
-    user = User.objects.get(pk=pk)
-    user.notifications.unread()
-```
-
-There are some other QuerySet methods, too.
-
-#### `qs.unsent()`
-
-Return all of the unsent notifications, filtering the current queryset.
-(emailed=False)
-
-#### `qs.sent()`
-
-Return all of the sent notifications, filtering the current queryset.
-(emailed=True)
-
-#### `qs.unread()`
-
-Return all of the unread notifications, filtering the current queryset.
-When `SOFT_DELETE=True`, this filter contains `deleted=False`.
-
-#### `qs.read()`
-
-Return all of the read notifications, filtering the current queryset.
-When `SOFT_DELETE=True`, this filter contains `deleted=False`.
-
-#### `qs.mark_all_as_read()` \| `qs.mark_all_as_read(recipient)`
-
-Mark all of the unread notifications in the queryset (optionally also
-filtered by `recipient`) as read.
-
-#### `qs.mark_all_as_unread()` \| `qs.mark_all_as_unread(recipient)`
-
-Mark all of the read notifications in the queryset (optionally also
-filtered by `recipient`) as unread.
-
-#### `qs.mark_as_sent()` \| `qs.mark_as_sent(recipient)`
-
-Mark all of the unsent notifications in the queryset (optionally also
-filtered by `recipient`) as sent.
-
-#### `qs.mark_as_unsent()` \| `qs.mark_as_unsent(recipient)`
-
-Mark all of the sent notifications in the queryset (optionally also
-filtered by `recipient`) as unsent.
-
-#### `qs.deleted()`
-
-Return all notifications that have `deleted=True`, filtering the current
-queryset. Must be used with `SOFT_DELETE=True`.
-
-#### `qs.active()`
-
-Return all notifications that have `deleted=False`, filtering the
-current queryset. Must be used with `DELETE=True`.
-
-#### `qs.mark_all_as_deleted()` \| `qs.mark_all_as_deleted(recipient)`
-
-Mark all notifications in the queryset (optionally also filtered by
-`recipient`) as `deleted=True`. Must be used with `DELETE=True`.
-
-#### `qs.mark_all_as_active()` \| `qs.mark_all_as_active(recipient)`
-
-Mark all notifications in the queryset (optionally also filtered by
-`recipient`) as `deleted=False`. Must be used with `SOFT_DELETE=True`.
+| Method                                | Purpose                                                          |
+|---------------------------------------|------------------------------------------------------------------|
+| `qs.unread()`                         | Unread notifications. With `SOFT_DELETE=True`, excludes deleted. |
+| `qs.read()`                           | Read notifications. With `SOFT_DELETE=True`, excludes deleted.   |
+| `qs.unsent()`                         | `emailed=False`.                                                 |
+| `qs.sent()`                           | `emailed=True`.                                                  |
+| `qs.mark_all_as_read([recipient])`    | Mark all unread rows as read.                                    |
+| `qs.mark_all_as_unread([recipient])`  | Mark all read rows as unread.                                    |
+| `qs.mark_as_sent([recipient])`        | Mark unsent rows as sent.                                        |
+| `qs.mark_as_unsent([recipient])`      | Mark sent rows as unsent.                                        |
+| `qs.deleted()`                        | Rows with `deleted=True`. Requires `SOFT_DELETE=True`.           |
+| `qs.active()`                         | Rows with `deleted=False`. Requires `SOFT_DELETE=True`.          |
+| `qs.mark_all_as_deleted([recipient])` | Flip to `deleted=True`. Requires `SOFT_DELETE=True`.             |
+| `qs.mark_all_as_active([recipient])`  | Flip to `deleted=False`. Requires `SOFT_DELETE=True`.            |
 
 ### Model methods
 
-#### `obj.timesince([datetime])`
+- `obj.timesince([datetime])` — wrapper around Django's `timesince`.
+- `obj.naturalday()` / `obj.naturaltime()` — wrappers around the
+  `django.contrib.humanize` helpers of the same name.
+- `obj.mark_as_read()` / `obj.mark_as_unread()` — flip `unread` on a
+  single row.
+- `obj.slug` — URL-safe encoded id, used by the `mark-as-read`,
+  `mark-as-unread`, and `delete` views.
 
-A wrapper for Django\'s `timesince` function.
+## Template tags
 
-#### `obj.mark_as_read()`
+Load the tag library in your template:
 
-Mark the current object as read.
-
-### Template tags
-
-Put `{% load notifications_tags %}` in the template before
-you actually use notification tags.
+```django
+{% load notifications_tags %}
+```
 
 ### `notifications_unread`
 
-```python
-    {% notifications_unread %}
+```django
+{% notifications_unread %}
 ```
 
-Give the number of unread notifications for a user, or nothing (an empty
-string) for an anonymous user.
+Returns the unread count for the current user, or an empty string for
+anonymous users. Storing it in a variable is usually what you want:
 
-Storing the count in a variable for further processing is advised, such
-as:
-
-```python
-    {% notifications_unread as unread_count %}
-    ...
-    {% if unread_count %}
-        You have <strong>{{ unread_count }}</strong> unread notifications.
-    {% endif %}
+```django
+{% notifications_unread as unread_count %}
+{% if unread_count %}
+    You have <strong>{{ unread_count }}</strong> unread notifications.
+{% endif %}
 ```
 
 ## Live-updater API
 
-To ensure users always have the most up-to-date notifications,
-`django-notifications` includes a simple javascript API for
-updating specific fields within a django template.
+A small JavaScript API periodically polls the server to keep unread counts
+and lists up to date. Two endpoints are provided for unread data:
 
-There are two possible API calls that can be made:
+1. `api/unread_count/` — `{"unread_count": 1}`
+2. `api/unread_list/` — `{"unread_count": 1, "unread_list": [ ... ]}`
 
-1.  `api/unread_count/` that returns a javascript object with 1 key:
-    `unread_count` eg:
+Matching `api/all_count/` and `api/all_list/` endpoints cover *all*
+notifications (read and unread) and follow the same key pattern —
+`{scope}_count` and `{scope}_list`, where `scope` mirrors the endpoint
+segment (so `all_count`, `all_list`).
 
-        {"unread_count":1}
+Notification JSON is produced via Django's `model_to_dict`. Each list entry
+also exposes `target_url`, `actor_url`, and `action_object_url`, which come
+from `Model.get_absolute_url()` by default. You can override the URL
+specifically for notifications by implementing
+`Model.get_url_for_notifications(notification, request)` on the related
+model.
 
-2.  `api/unread_list/` that returns a javascript object with 2 keys:
-    `unread_count` and `unread_list` eg:
+Query string arguments (list endpoints):
 
-        {
-         "unread_count":1,
-         "unread_list":[--list of json representations of notifications--]
-        }
+- **max** — maximum length of the returned list.
+- **mark_as_read** — if truthy, mark the returned notifications as read.
 
-    Representations of notifications are based on the django method:
-    `model_to_dict`
+Example: `GET api/unread_list/?max=3&mark_as_read=true` returns three
+notifications and marks them read, so they'll drop off the next request.
 
-    Query string arguments:
+> **Security note:** the state-changing views (`mark_as_read`,
+> `mark_as_unread`, `mark_all_as_read`, `delete`) require POST and a CSRF
+> token. Only the list-with-`mark_as_read` query parameter above is
+> accessible via GET, and it's gated to the requesting user's own unread
+> rows.
 
-    -   **max** - maximum length of unread list.
-    -   **mark\_as\_read** - mark notification in list as read.
+### Wiring it up
 
-    For example, get `api/unread_list/?max=3&mark_as_read=true` returns
-    3 notifications and mark them read (remove from list on next
-    request).
+1. Load `{% load notifications_tags %}` in the template.
+2. Include the JS and register the callbacks:
 
-    The list outputs `target_url`, `actor_url`, `action_object_url`.
-    This URL is generated from standard Django `Model.get_absolute_url()` or
-    you can override the URL just for notifications by implementing
-    `Model.get_url_for_notifications(notification, request)`.
+    ```django
+    <script src="{% static 'notifications/notify.js' %}"></script>
+    {% register_notify_callbacks callbacks='fill_notification_list,fill_notification_badge' %}
+    ```
 
-### How to use:
+    Since 1.11.2, `register_notify_callbacks` renders its configuration as
+    a `<script type="application/json">` block rather than inline JS, so it
+    works under strict Content Security Policies without a `'unsafe-inline'`
+    allowance.
 
-1.  Put `{% load notifications_tags %}` in the template before you
-    actually use notification tags.
+    `register_notify_callbacks` arguments:
 
-2.  In the area where you are loading javascript resources add the
-    following tags in the order below:
+    - `badge_class` (default `live_notify_badge`) — CSS class of the unread-count element.
+    - `menu_class` (default `live_notify_list`) — CSS class of the list element.
+    - `refresh_period` (default `15`) — poll interval in seconds.
+    - `fetch` (default `5`) — how many notifications to fetch each poll.
+    - `callbacks` (default `''`) — comma-separated list of JS functions to call on each poll.
+    - `api_name` (default `list`) — either `list` or `count`.
+    - `mark_as_read` (default `False`) — mark fetched notifications as read.
+    - `nonce` (default `None`) — if set, emitted as the `nonce` attribute
+      on the `<script>` tag, for strict CSP setups that allow JSON blocks
+      by nonce.
 
-        <script src="{% static 'notifications/notify.js' %}" type="text/javascript"></script>
-        {% register_notify_callbacks callbacks='fill_notification_list,fill_notification_badge' %}
+3. Insert a live-updating badge:
 
-    `register_notify_callbacks` takes the following arguments:
+    ```django
+    {% live_notify_badge %}
+    ```
 
-    1.  `badge_class` (default `live_notify_badge`) - The identifier
-        `class` of the element to show the unread count,
-        that will be periodically updated.
-    2.  `menu_class` (default `live_notify_list`) - The identifier
-        `class` of the element to insert a list of unread
-        items, that will be periodically updated.
-    3.  `refresh_period` (default `15`) - How often to fetch unread
-        items from the server (integer in seconds).
-    4.  `fetch` (default `5`) - How many notifications to fetch each
-        time.
-    5.  `callbacks` (default `<empty string>`) - A comma-separated list
-        of javascript functions to call each period.
-    6.  `api_name` (default `list`) - The name of the API to call (this
-        can be either `list` or `count`).
-    7. ``mark_as_read`` (default ``False``) - Marks notifications as read when fetched.
+    Takes `badge_class` (default `live_notify_badge`) — CSS class for the
+    generated `<span>`.
 
-3.  To insert a live-updating unread count, use the following template:
+4. Insert a live-updating list:
 
-        {% live_notify_badge %}
+    ```django
+    {% live_notify_list %}
+    ```
 
-    `live_notify_badge` takes the following arguments:
+    Takes `list_class` (default `live_notify_list`) — CSS class for the
+    generated `<ul>`.
 
-    -  `badge_class` (default `live_notify_badge`) - The identifier
-        `class` for the `<span>` element that will be created to show
-        the unread count.
+### Using the live-updater with Bootstrap
 
-4.  To insert a live-updating unread list, use the following template:
+Reuse the template tags with Bootstrap's classes:
 
-        {% live_notify_list %}
+```django
+{% live_notify_badge badge_class="badge" %}
+{% live_notify_list list_class="dropdown-menu" %}
+```
 
-    `live_notify_list` takes the following arguments:
+### Custom JavaScript callbacks
 
-    -  `list_class` (default `live_notify_list`) - The identifier
-        `class` for the `<ul>` element that will be created to insert
-        the list of notifications into.
+The `callbacks` argument of `register_notify_callbacks` is a comma-separated
+list of JS function names called on every poll. Each function receives one
+argument, `data`, containing the entire API response.
 
-### Using the live-updater with bootstrap
-
-The Live-updater can be incorporated into bootstrap with minimal code.
-
-To create a live-updating bootstrap badge containing the unread count,
-simply use the template tag:
-
-    {% live_notify_badge badge_class="badge" %}
-
-To create a live-updating bootstrap dropdown menu containing a selection
-of recent unread notifications, simply use the template tag:
-
-    {% live_notify_list list_class="dropdown-menu" %}
-
-### Customising the display of notifications using javascript callbacks
-
-While the live notifier for unread counts should suit most use cases,
-users may wish to alter how unread notifications are shown.
-
-The `callbacks` argument of the `register_notify_callbacks` dictates
-which javascript functions are called when the unread api call is made.
-
-To add a custom javascript callback, simply add this to the list, like
-so:
-
-    {% register_notify_callbacks callbacks='fill_notification_badge,my_special_notification_callback' %}
-
-The above would cause the callback to update the unread count badge, and
-would call the custom function
-`my_special_notification_callback`. All callback
-functions are passed a single argument by convention called
-`data`, which contains the entire result from the API.
-
-For example, the below function would get the recent list of unread
-messages and log them to the console:
+```django
+{% register_notify_callbacks callbacks='fill_notification_badge,my_special_notification_callback' %}
+```
 
 ```javascript
 function my_special_notification_callback(data) {
-    for (var i=0; i < data.unread_list.length; i++) {
-        msg = data.unread_list[i];
+    for (const msg of data.unread_list) {
         console.log(msg);
     }
 }
@@ -433,102 +391,92 @@ function my_special_notification_callback(data) {
 
 ### Testing the live-updater
 
-1.  Clone the repo
-2.  Run `python manage.py runserver`
-3.  Browse to `yourserverip/test/`
-4.  Click \'Make a notification\' and a new notification should appear
-    in the list in 5-10 seconds.
+1. Clone the repo.
+2. Run `python manage.py runserver`.
+3. Browse to `http://127.0.0.1:8000/test/`.
+4. Click "Make a notification" — a new notification should appear in the
+   list within 5-10 seconds.
 
-## Serializing the django-notifications Model
+## Serializing the notification model
 
-See here - <http://www.django-rest-framework.org/api-guide/relations/#generic-relationships>
-
-In this example the target object can be of type Foo or Bar and the
-appropriate serializer will be used.
+See the DRF guide on
+[generic relationships](https://www.django-rest-framework.org/api-guide/relations/#generic-relationships).
+The example below picks a serializer based on the target type:
 
 ```python
 class GenericNotificationRelatedField(serializers.RelatedField):
 
     def to_representation(self, value):
         if isinstance(value, Foo):
-            serializer = FooSerializer(value)
+            return FooSerializer(value).data
         if isinstance(value, Bar):
-            serializer = BarSerializer(value)
-
-        return serializer.data
+            return BarSerializer(value).data
 
 
 class NotificationSerializer(serializers.Serializer):
-    recipient = PublicUserSerializer(User, read_only=True)
+    recipient = PublicUserSerializer(read_only=True)
     unread = serializers.BooleanField(read_only=True)
     target = GenericNotificationRelatedField(read_only=True)
 ```
 
-Thanks to @DaWy
+Thanks to @DaWy.
 
-### `AbstractNotification` model
+## `AbstractNotification` model
 
-In case you need to customize the notification model in order to add
-field or customised features that depend on your application, you can
-inherit and extend the `AbstractNotification` model, example:
+If you need to extend the notification model with extra fields, subclass
+`AbstractNotification`:
 
 ```python
-#In your_app/models.py
-
+# your_app/models.py
 from django.db import models
 from notifications.base.models import AbstractNotification
 
 
 class Notification(AbstractNotification):
-    # custom field example
-    category = models.ForeignKey('myapp.Category',
-                                 on_delete=models.CASCADE)
+    category = models.ForeignKey('myapp.Category', on_delete=models.CASCADE)
 
     class Meta(AbstractNotification.Meta):
         abstract = False
 ```
 
-You will require to define `NOTIFICATIONS_NOTIFICATION_MODEL` setting in
-`setting.py` as follows:
+Then point the library at your model in `settings.py`:
 
 ```python
-# In your_project/settings.py
-
 NOTIFICATIONS_NOTIFICATION_MODEL = 'your_app.Notification'
 ```
 
+As of 1.11.3, swapping is resolved via Django's built-in app loading rather
+than the third-party `swapper` package. No configuration changes are
+required when upgrading.
+
 ## Notes
 
-### Email Notification
+### Email notifications
 
-Sending email to users has not been integrated into this library. So for
-now you need to implement it if needed. There is a reserved field
-`Notification.emailed` to make it easier.
+Email delivery is not built in. The `Notification.emailed` field is
+reserved to make it easier to track whether you've sent one.
 
 ### Bulk creation and signals
 
-As of v1.11.0, `notify.send()` uses `bulk_create` when writing
-notifications, which means Django's `post_save` signal does **not** fire
-for individual `Notification` objects.
+As of 1.11.0, `notify.send()` uses `bulk_create`, which means Django's
+`post_save` signal does **not** fire for the `Notification` rows it writes.
 
-If you previously relied on `post_save` to trigger side-effects (e.g.
-sending emails or push notifications), switch to the `notify` signal
-instead:
+If you previously relied on `post_save` to trigger side effects (email,
+push, etc.), switch to connecting the `notify` signal instead:
 
 ```python
 from notifications.signals import notify
 
 def handle_notifications(sender, verb, **kwargs):
     recipient = kwargs.get('recipient')
-    # your side-effect logic here (send email, push notification, etc.)
+    # side effect here (send email, push, ...)
 
 notify.connect(handle_notifications)
 ```
 
-The `notify` signal fires once per `notify.send()` call, before the
-notifications are written to the database. For side-effects that need
-access to the saved `Notification` objects, call `notify.send()` and use
-its return value directly:
+The `notify` signal fires once per `notify.send()` call, *before* the rows
+are written. If you need access to the saved `Notification` objects, use
+the return value of `notify.send()` instead:
 
 ```python
 from notifications.signals import notify
@@ -547,32 +495,39 @@ for handler, notifications in responses:
         send_push(notification.recipient, str(notification))
 ```
 
-### Sample App
+### Sample app
 
-A sample app has been implemented in
-`notifications/tests/sample_notifications` that extends
-`django-notifications` with the sole purpose of testing its
-extensibility. You can run the SAMPLE APP by setting the environment
-variable `SAMPLE_APP` as follows
+A sample app lives at `notifications/tests/sample_notifications` and
+exercises the `AbstractNotification` swap path. Run it by exporting
+`SAMPLE_APP=1`:
 
 ```bash
 export SAMPLE_APP=1
-# Run the Django development server with sample_notifications app installed
 python manage.py runserver
-# Unset SAMPLE_APP to remove sample_notifications app from list of INSTALLED_APPS
 unset SAMPLE_APP
 ```
 
-## `django-notifications` Team
+## Credits
 
-Core contributors (in alphabetical order):
+### Upstream contributors
 
--   [Alvaro Leonel](https://github.com/AlvaroLQueiroz)
--   [Federico Capoano](https://github.com/nemesisdesign)
--   [Samuel Spencer](https://github.com/LegoStormtroopr)
--   [Yang Yubo](https://github.com/yangyubo)
--   [YPCrumble](https://github.com/YPCrumble)
--   [Zhongyuan Zhang](https://github.com/zhang-z)
+The original `django-notifications` was built by (alphabetical):
+
+- [Alvaro Leonel](https://github.com/AlvaroLQueiroz)
+- [Federico Capoano](https://github.com/nemesisdesign)
+- [Samuel Spencer](https://github.com/LegoStormtroopr)
+- [Yang Yubo](https://github.com/yangyubo)
+- [YPCrumble](https://github.com/YPCrumble)
+- [Zhongyuan Zhang](https://github.com/zhang-z)
+
+See [`AUTHORS.txt`](AUTHORS.txt) for the full contributor list.
+
+### Fork maintainers
+
+This community fork is maintained by
+[django-notifications-community contributors](https://github.com/django-notifications-community/django-notifications-community/graphs/contributors).
+Please use this repo's issue tracker for fork-specific bugs and features
+rather than contacting the upstream authors.
 
 ## Contributing
 

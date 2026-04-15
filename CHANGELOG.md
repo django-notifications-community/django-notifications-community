@@ -8,6 +8,34 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.11.3 (2026-04-15)
+
+Final release of the 1.11.x line.
+
+  - Replaced `django-model-utils` `Choices` with `TextChoices` for
+    `Notification.LEVELS` (#42, thanks @PanovYury)
+  - Dropped the `swapper` runtime dependency; `AbstractNotification`
+    swapping now uses Django's built-in app loading (#45)
+  - Expanded the `bulk_create` migration guide in the README
+
+  No migrations. Drop-in upgrade from 1.11.x.
+
+## 1.11.2 (2026-04-12)
+
+  - Fixed `format_html` placeholder usage in template tags and Django
+    5.x compatibility (#37)
+  - `register_notify_callbacks` now renders its config as a
+    `<script type="application/json">` block, avoiding quoting bugs and
+    working under strict CSPs (#37)
+  - Removed remaining Django < 4.2 compatibility shims (#34)
+  - Modernized `notify.js` syntax; removed stray utf-8 coding headers
+    (#33)
+  - Docs: updated README and CONTRIBUTING for `uv` (#32)
+  - Tooling: added Dependabot and pre-commit; removed `pylint`,
+    `prospector`, and `MANIFEST.in`
+  - Tests: expanded coverage for template tags, helpers, admin, and API
+    URL resolution (#35, #38, #39)
+
 ## 1.11.1 (2026-04-12)
 
   - Removed dead Python 2 and Django < 2.0 compatibility code (#24)
