@@ -69,6 +69,17 @@ select = [
     "I",     # isort
     "UP",    # pyupgrade
     "D300",  # triple double-quoted strings for docstrings
+    "SIM",   # flake8-simplify
+    "RUF",   # Ruff-specific rules
+    "PERF",  # perflint
+]
+ignore = [
+    "SIM108",  # ternary-over-if-else: often hurts readability
+    "PERF203", # try-except-in-loop: noisy, frequent false positives
+    "RUF001",  # ambiguous unicode: collides with gettext strings
+    "RUF002",  # ambiguous unicode in docstrings
+    "RUF003",  # ambiguous unicode in comments
+    "RUF012",  # mutable class defaults: clashes with Django Meta/Admin idioms
 ]
 
 [tool.ruff.format]
