@@ -256,6 +256,18 @@ class AbstractNotification(models.Model):
 
         return timesince_(self.timestamp, now)
 
+    def naturalday(self):
+        """Return the timestamp formatted as a natural day (``today``, ``yesterday``, etc.)."""
+        from django.contrib.humanize.templatetags.humanize import naturalday
+
+        return naturalday(self.timestamp)
+
+    def naturaltime(self):
+        """Return the timestamp formatted as a natural time (``2 seconds ago`` etc.)."""
+        from django.contrib.humanize.templatetags.humanize import naturaltime
+
+        return naturaltime(self.timestamp)
+
     @property
     def slug(self):
         return id2slug(self.id)
