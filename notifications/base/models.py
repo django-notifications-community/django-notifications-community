@@ -171,9 +171,8 @@ class AbstractNotification(models.Model):
         on_delete=models.CASCADE,
         related_name='notifications',
         verbose_name=_('recipient'),
-        blank=False,
     )
-    unread = models.BooleanField(_('unread'), default=True, blank=False, db_index=True)
+    unread = models.BooleanField(_('unread'), default=True, db_index=True)
 
     actor_content_type = models.ForeignKey(
         ContentType, on_delete=models.CASCADE, related_name='notify_actor', verbose_name=_('actor content type')
