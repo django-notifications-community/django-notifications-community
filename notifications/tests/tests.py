@@ -697,7 +697,9 @@ class NotificationQueryCountTest(TestCase):
 
 
 class AdminTest(TestCase):
-    app_name = 'notifications'
+    @property
+    def app_name(self):
+        return Notification._meta.app_label
 
     def setUp(self):
         self.message_count = 10
