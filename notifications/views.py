@@ -2,9 +2,9 @@
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.utils.decorators import method_decorator
 from django.utils.encoding import iri_to_uri
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
@@ -19,14 +19,10 @@ from notifications.utils import slug2id
 Notification = load_notification_model()
 
 
-class NotificationViewList(ListView):
+class NotificationViewList(LoginRequiredMixin, ListView):
     template_name = 'notifications/list.html'
     context_object_name = 'notifications'
     paginate_by = notification_settings.get_config()['PAGINATE_BY']
-
-    @method_decorator(login_required)
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
 
 
 class AllNotificationsList(NotificationViewList):

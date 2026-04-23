@@ -19,14 +19,12 @@ def get_cached_notification_unread_count(user):
     return cache.get_or_set(cache_key, user.notifications.unread().count, settings.get_config()['CACHE_TIMEOUT'])
 
 
+@register.simple_tag(takes_context=True)
 def notifications_unread(context):
     user = user_context(context)
     if not user:
         return ''
     return get_cached_notification_unread_count(user)
-
-
-notifications_unread = register.simple_tag(takes_context=True)(notifications_unread)
 
 
 @register.filter

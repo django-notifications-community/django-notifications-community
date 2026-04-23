@@ -1,12 +1,10 @@
 from django.contrib import admin
-from django.utils.translation import gettext_lazy
+from django.utils.translation import gettext_lazy as _
 
 
+@admin.action(description=_('Mark selected notifications as unread'))
 def mark_unread(modeladmin, request, queryset):
     queryset.update(unread=True)
-
-
-mark_unread.short_description = gettext_lazy('Mark selected notifications as unread')
 
 
 class AbstractNotificationAdmin(admin.ModelAdmin):
