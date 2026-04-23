@@ -28,6 +28,19 @@
 > pip uninstall django-notifications-hq
 > pip install django-notifications-community
 > ```
+>
+> or with [uv](https://docs.astral.sh/uv/):
+>
+> ```bash
+> uv remove django-notifications-hq
+> uv add django-notifications-community
+> ```
+>
+> Editing `pyproject.toml` by hand and running `uv sync` can leave the
+> shared `notifications/` import path in a half-installed state, since
+> both distributions write to the same directory. Use `uv remove` +
+> `uv add` (or `uv pip install --reinstall django-notifications-community`
+> as a fallback) to avoid it.
 
 ## Contents
 
@@ -85,6 +98,9 @@ Nomenclature is based on the Activity Streams spec:
 
 If you need Django 4.2 or 5.1, pin
 `django-notifications-community<1.12`.
+
+If you need Python 3.9, pin
+`django-notifications-community<1.10`.
 
 ## Installation
 
