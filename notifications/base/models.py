@@ -164,7 +164,7 @@ class AbstractNotification(models.Model):
         warning = 'warning', _('warning')
         error = 'error', _('error')
 
-    level = models.CharField(_('level'), choices=LEVELS.choices, default=LEVELS.info, max_length=20)
+    level = models.CharField(_('level'), choices=LEVELS, default=LEVELS.info, max_length=20)
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
