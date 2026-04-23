@@ -17,6 +17,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.timezone import localtime
+
 from notifications.base.models import notify_handler
 from notifications.helpers import get_num_to_fetch, get_object_url
 from notifications.signals import notify
