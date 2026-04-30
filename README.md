@@ -117,12 +117,13 @@ or with [uv](https://docs.astral.sh/uv/):
 uv add django-notifications-community
 ```
 
-Add `notifications` to `INSTALLED_APPS`. It should come after any apps that
-generate notifications (like `django.contrib.auth`):
+Add `notifications` to `INSTALLED_APPS`. It depends on `django.contrib.auth`
+and `django.contrib.contenttypes` (both ship in the default Django project):
 
 ```python
 INSTALLED_APPS = [
     'django.contrib.auth',
+    'django.contrib.contenttypes',
     ...
     'notifications',
     ...
