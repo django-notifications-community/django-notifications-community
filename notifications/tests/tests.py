@@ -1291,3 +1291,35 @@ class RegistryIntegrationTest(TestCase):
         n = self.to_user.notifications.first()
         self.client.post(reverse('notifications:mark_as_read', kwargs={'slug': n.slug}))
         self.assertIsNone(cache.get(extra))
+
+
+class DataKwargTest(TestCase):
+    """notify.send(..., data={...}) survives the handler's data merging."""
+
+    def setUp(self):
+        self.from_user = User.objects.create_user(username='dk_from', password='pwd')
+        self.to_user = User.objects.create_user(username='dk_to', password='pwd')
+
+    def test_explicit_data_kwarg_is_preserved(self):
+        notify.send(self.from_user, recipient=self.to_user, verb='dk1', data={'foo': 'bar'})
+        n = Notification.objects.get(verb='dk1')
+        self.assertEqual(n.data, {'foo': 'bar'})
+
+    def test_explicit_data_merges_with_extras(self):
+        notify.send(
+            self.from_user, recipient=self.to_user, verb='dk2', data={'foo': 'bar'}, extra='zzz'
+        )
+        n = Notification.objects.get(verb='dk2')
+        self.assertEqual(n.data, {'foo': 'bar', 'extra': 'zzz'})
+
+    def test_no_data_no_extras_leaves_data_null(self):
+        notify.send(self.from_user, recipient=self.to_user, verb='dk3')
+        n = Notification.objects.get(verb='dk3')
+        self.assertIsNone(n.data)
+
+    def test_caller_dict_not_mutated(self):
+        payload = {'foo': 'bar'}
+        notify.send(
+            self.from_user, recipient=self.to_user, verb='dk4', data=payload, extra='zzz'
+        )
+        self.assertEqual(payload, {'foo': 'bar'})

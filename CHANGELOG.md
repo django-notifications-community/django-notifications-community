@@ -8,6 +8,14 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## Unreleased
+
+  - Fixed `notify.send(..., data={...})` silently producing
+    `Notification.data == {}`. The handler's data-merging loop was
+    setting the caller's payload via `setattr` and then immediately
+    clobbering it with an empty dict. Explicit `data=` now survives
+    and merges with any extra kwargs.
+
 ## 1.12.0 (2026-04-30)
 
   - Dropped support for Django 4.2 and 5.1. Both are past end of

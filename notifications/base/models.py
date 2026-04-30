@@ -362,8 +362,11 @@ def notify_handler(verb, **kwargs):
                 )
 
         if kwargs and notifications_settings.get_config()['USE_JSONFIELD']:
-            # set kwargs as model column if available, put the rest in data
-            data_kwargs = {}
+            # Seed data_kwargs with the explicit data= payload so it
+            # survives the loop. Without this, the trailing
+            # ``newnotify.data = data_kwargs`` would clobber whatever
+            # the loop set via ``setattr(newnotify, 'data', ...)``.
+            data_kwargs = dict(kwargs.pop('data', None) or {})
             for key in list(kwargs.keys()):
                 if key.endswith('_for_concrete_model'):
                     continue
@@ -371,7 +374,8 @@ def notify_handler(verb, **kwargs):
                     setattr(newnotify, key, kwargs[key])
                 else:
                     data_kwargs[key] = kwargs[key]
-            newnotify.data = data_kwargs
+            if data_kwargs:
+                newnotify.data = data_kwargs
 
         new_notifications.append(newnotify)
 
