@@ -1060,3 +1060,19 @@ class UnreadCountCacheInvalidationTest(TestCase):
         n = self.to_user.notifications.first()
         self.client.post(reverse('notifications:delete', kwargs={'slug': n.slug}))
         self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_live_unread_list_with_mark_as_read_drops_cache(self):
+        """``?mark_as_read=true`` on the live JSON list also bulk-marks rows."""
+        from django.core.cache import cache
+
+        self._seed_cache()
+        self.client.get(reverse('notifications:live_unread_notification_list') + '?mark_as_read=true')
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_live_unread_list_without_mark_as_read_keeps_cache(self):
+        """A plain GET should not invalidate the cache."""
+        from django.core.cache import cache
+
+        self._seed_cache(value=42)
+        self.client.get(reverse('notifications:live_unread_notification_list'))
+        self.assertEqual(cache.get(self._cache_key()), 42)
