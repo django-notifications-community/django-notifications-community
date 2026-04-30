@@ -1,13 +1,23 @@
 from django.core.cache import cache
 from django.forms import model_to_dict
 
+from notifications.registry import apply_queryset_filters, collect_invalidation_keys
 from notifications.settings import get_config
 from notifications.templatetags.notifications_tags import unread_count_cache_key
 from notifications.utils import id2slug
 
 
-def invalidate_unread_count_cache(user):
-    cache.delete(unread_count_cache_key(user))
+def invalidate_unread_count_cache(user, request=None):
+    """Drop the cached unread badge count(s) for ``user``.
+
+    Without this the badge can show a stale number for up to
+    ``CACHE_TIMEOUT`` seconds. Downstream packages that namespace the
+    cache key (e.g. by site) register additional keys via the registry
+    and they are dropped here too.
+    """
+    keys = [unread_count_cache_key(user, request)]
+    keys.extend(collect_invalidation_keys(user, request))
+    cache.delete_many(keys)
 
 
 def get_object_url(instance, notification, request):
@@ -44,10 +54,9 @@ def get_notification_list(request, method_name='all'):
         method_name = 'active'
     mark_as_read = request.GET.get('mark_as_read')
     notification_ids = []
-    qs = (
-        getattr(request.user.notifications, method_name)()
-        .select_related('actor_content_type', 'target_content_type', 'action_object_content_type')
-        .prefetch_related('actor', 'target', 'action_object')
+    qs = apply_queryset_filters(getattr(request.user.notifications, method_name)(), request)
+    qs = qs.select_related('actor_content_type', 'target_content_type', 'action_object_content_type').prefetch_related(
+        'actor', 'target', 'action_object'
     )
     for notification in qs[0:num_to_fetch]:
         struct = model_to_dict(
@@ -87,5 +96,5 @@ def get_notification_list(request, method_name='all'):
             notification_ids.append(notification.id)
     if notification_ids:
         qs.filter(id__in=notification_ids).update(unread=False)
-        invalidate_unread_count_cache(request.user)
+        invalidate_unread_count_cache(request.user, request)
     return notification_list

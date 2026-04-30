@@ -10,18 +10,20 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
 from notifications import settings
+from notifications.registry import apply_queryset_filters, derive_cache_key
 
 register = Library()
 
 
-def unread_count_cache_key(user):
-    return f'notifications_unread_count_{user.pk}'
+def unread_count_cache_key(user, request=None):
+    return derive_cache_key(f'notifications_unread_count_{user.pk}', user, request)
 
 
-def get_cached_notification_unread_count(user):
+def get_cached_notification_unread_count(user, request=None):
+    qs = apply_queryset_filters(user.notifications.unread(), request)
     return cache.get_or_set(
-        unread_count_cache_key(user),
-        user.notifications.unread().count,
+        unread_count_cache_key(user, request),
+        qs.count,
         settings.get_config()['CACHE_TIMEOUT'],
     )
 
@@ -31,14 +33,14 @@ def notifications_unread(context):
     user = user_context(context)
     if not user:
         return ''
-    return get_cached_notification_unread_count(user)
+    return get_cached_notification_unread_count(user, context.get('request'))
 
 
 @register.filter
 def has_notification(user):
-    if user:
-        return user.notifications.unread().exists()
-    return False
+    if not user:
+        return False
+    return apply_queryset_filters(user.notifications.unread(), None).exists()
 
 
 _JS_IDENTIFIER_RE = re.compile(r'^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$')
@@ -113,7 +115,7 @@ def live_notify_badge(context, badge_class='live_notify_badge'):
     return format_html(
         "<span class='{}'>{}</span>",
         badge_class,
-        get_cached_notification_unread_count(user),
+        get_cached_notification_unread_count(user, context.get('request')),
     )
 
 
