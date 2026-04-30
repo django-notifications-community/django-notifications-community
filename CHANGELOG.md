@@ -8,25 +8,27 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
-## Unreleased
+## 1.12.1 (2026-04-30)
 
   - Fixed `notify.send(..., data={...})` silently producing
     `Notification.data == {}`. The handler's data-merging loop was
     setting the caller's payload via `setattr` and then immediately
     clobbering it with an empty dict. Explicit `data=` now survives
-    and merges with any extra kwargs.
+    and merges with any extra kwargs. (#56)
   - Fixed `notify.send(..., timestamp=None)` raising `IntegrityError`
     on the `NOT NULL` `timestamp` column. `kwargs.pop('timestamp',
     timezone.now())` returned `None` when the caller passed `None`
     explicitly (the default only kicks in when the key is absent).
-    Coerce a `None` to `timezone.now()`.
+    Coerce a `None` to `timezone.now()`. (#57)
   - Hoisted `ContentType.objects.get_for_model()` for the actor and the
     optional `target` / `action_object` out of the per-recipient loop
     in `notify_handler`. The lookups are independent of the recipient,
     so a 500-user group call now does at most three lookups instead of
     up to 1500. `get_for_model` is process-cached, but the saved
     overhead still adds up under cold-cache or high-throughput
-    conditions.
+    conditions. (#58)
+
+  No migrations. Drop-in upgrade from 1.12.0.
 
 ## 1.12.0 (2026-04-30)
 
