@@ -18,15 +18,14 @@ maintainers = [
     { name = "django-notifications-community contributors" },
 ]
 dependencies = [
-    "django>=4.2,<5.3",
+    "django>=5.2,<6.3",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 4.2",
-    "Framework :: Django :: 5.1",
     "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python",

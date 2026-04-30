@@ -8,6 +8,22 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.12.0 (2026-04-30)
+
+  - Dropped support for Django 4.2 and 5.1. Both are past end of
+    upstream support (5.1 in December 2025, 4.2 in April 2026). Users
+    still on 4.2 or 5.1 should pin
+    `django-notifications-community<1.12`.
+  - Relaxed the Django upper bound to `<6.3` (was `<5.3`) so users can
+    install on Django 6.0, 6.1, and the upcoming 6.2 LTS without
+    waiting for a release.
+  - Added Django 6.0 to the CI matrix on Python 3.12 and 3.13 (6.0
+    requires Python 3.12+). The tested matrix is now Django 5.2 LTS on
+    Python 3.10 through 3.13, plus Django 6.0 on Python 3.12 and 3.13.
+  - As a side effect, the `RemovedInDjango51Warning: 'index_together' is
+    deprecated` that used to fire on every `migrate` under Django 4.2 no
+    longer appears.
+
 ## 1.11.3 (2026-04-15)
 
 Final release of the 1.11.x line.
