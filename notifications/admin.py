@@ -1,4 +1,5 @@
 """Django notifications admin file"""
+
 from django.contrib import admin
 
 from notifications.base.admin import AbstractNotificationAdmin

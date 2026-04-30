@@ -331,7 +331,7 @@ def notify_handler(verb, **kwargs):
     # Check if User or Group
     if isinstance(recipient, Group):
         recipients = recipient.user_set.all()
-    elif isinstance(recipient, (QuerySet, list)):
+    elif isinstance(recipient, QuerySet | list):
         recipients = recipient
     else:
         recipients = [recipient]

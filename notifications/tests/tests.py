@@ -3,6 +3,7 @@ This file demonstrates writing tests using the unittest module. These will pass
 when you run "manage.py test".
 Replace this with more appropriate tests for your application.
 """
+
 import json
 from datetime import timezone as dt_timezone
 from zoneinfo import ZoneInfo
@@ -806,16 +807,18 @@ class TemplateTagEscapingTest(TestCase):
 
         from notifications.templatetags.notifications_tags import register_notify_callbacks
 
-        html = str(register_notify_callbacks(
-            badge_class="b'<>&\"class",
-            callbacks='fill_notification_badge',
-            fetch=20,
-            mark_as_read=True,
-        ))
+        html = str(
+            register_notify_callbacks(
+                badge_class='b\'<>&"class',
+                callbacks='fill_notification_badge',
+                fetch=20,
+                mark_as_read=True,
+            )
+        )
         start = html.index('>') + 1
         end = html.index('</script>')
         config = json_mod.loads(html[start:end])
-        self.assertEqual(config['badgeClass'], "b'<>&\"class")
+        self.assertEqual(config['badgeClass'], 'b\'<>&"class')
         self.assertEqual(config['fetchCount'], 20)
         self.assertTrue(config['markAsRead'])
         self.assertEqual(config['callbacks'], ['fill_notification_badge'])
@@ -823,16 +826,17 @@ class TemplateTagEscapingTest(TestCase):
     def test_live_notify_badge_escapes_class(self):
         request = RequestFactory().get('/')
         request.user = self.to_user
-        t = Template(
-            "{% load notifications_tags %}"
-            "{% live_notify_badge badge_class=class_name %}"
+        t = Template('{% load notifications_tags %}{% live_notify_badge badge_class=class_name %}')
+        html = t.render(
+            Context(
+                {
+                    'request': request,
+                    'user': self.to_user,
+                    'class_name': "x' onclick='alert(1)'",
+                }
+            )
         )
-        html = t.render(Context({
-            'request': request,
-            'user': self.to_user,
-            'class_name': "x' onclick='alert(1)'",
-        }))
-        self.assertIn("&#x27;", html)
+        self.assertIn('&#x27;', html)
         self.assertNotIn("onclick='alert", html)
 
     def test_live_notify_list_escapes_class(self):

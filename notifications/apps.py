@@ -1,4 +1,5 @@
 """Django notifications apps file"""
+
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
 
@@ -14,6 +15,7 @@ class Config(AppConfig):
         import notifications
         from notifications.base.models import notify_handler
         from notifications.signals import notify
+
         notifications.notify = notify
 
         notify.connect(notify_handler, dispatch_uid='notifications.models.notification')
