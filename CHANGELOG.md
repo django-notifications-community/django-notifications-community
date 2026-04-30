@@ -20,6 +20,13 @@ for background on why the fork exists.
     timezone.now())` returned `None` when the caller passed `None`
     explicitly (the default only kicks in when the key is absent).
     Coerce a `None` to `timezone.now()`.
+  - Hoisted `ContentType.objects.get_for_model()` for the actor and the
+    optional `target` / `action_object` out of the per-recipient loop
+    in `notify_handler`. The lookups are independent of the recipient,
+    so a 500-user group call now does at most three lookups instead of
+    up to 1500. `get_for_model` is process-cached, but the saved
+    overhead still adds up under cold-cache or high-throughput
+    conditions.
 
 ## 1.12.0 (2026-04-30)
 
