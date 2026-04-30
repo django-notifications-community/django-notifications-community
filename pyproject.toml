@@ -57,6 +57,10 @@ fallback_version = "0.0.0+unknown"
 
 [tool.setuptools.packages.find]
 include = ["notifications*"]
+exclude = ["notifications.tests*"]
+
+[tool.setuptools.exclude-package-data]
+notifications = ["tests/*", "tests/**/*"]
 
 [tool.ruff]
 target-version = "py310"
