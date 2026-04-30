@@ -15,6 +15,11 @@ for background on why the fork exists.
     setting the caller's payload via `setattr` and then immediately
     clobbering it with an empty dict. Explicit `data=` now survives
     and merges with any extra kwargs.
+  - Fixed `notify.send(..., timestamp=None)` raising `IntegrityError`
+    on the `NOT NULL` `timestamp` column. `kwargs.pop('timestamp',
+    timezone.now())` returned `None` when the caller passed `None`
+    explicitly (the default only kicks in when the key is absent).
+    Coerce a `None` to `timezone.now()`.
 
 ## 1.12.0 (2026-04-30)
 

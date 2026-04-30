@@ -1323,3 +1323,18 @@ class DataKwargTest(TestCase):
             self.from_user, recipient=self.to_user, verb='dk4', data=payload, extra='zzz'
         )
         self.assertEqual(payload, {'foo': 'bar'})
+
+
+class TimestampNoneTest(TestCase):
+    """notify.send(..., timestamp=None) should default to timezone.now()."""
+
+    def test_explicit_none_timestamp_defaults_to_now(self):
+        from_user = User.objects.create_user(username='ts_from', password='pwd')
+        to_user = User.objects.create_user(username='ts_to', password='pwd')
+        before = timezone.now()
+        notify.send(from_user, recipient=to_user, verb='ts1', timestamp=None)
+        after = timezone.now()
+        n = Notification.objects.get(verb='ts1')
+        self.assertIsNotNone(n.timestamp)
+        self.assertGreaterEqual(n.timestamp, before)
+        self.assertLessEqual(n.timestamp, after)
