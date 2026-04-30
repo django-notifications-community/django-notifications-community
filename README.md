@@ -48,6 +48,7 @@
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Settings](#settings)
+- [Multi-site](#multi-site)
 - [Generating notifications](#generating-notifications)
 - [QuerySet and model methods](#queryset-and-model-methods)
 - [Template tags](#template-tags)
@@ -180,6 +181,26 @@ With `SOFT_DELETE` on, `delete/<int:slug>/` flips `Notification.deleted` to
 `deleted=False` filter, and the `deleted`, `active`, `mark_all_as_deleted`,
 and `mark_all_as_active` queryset methods become usable. See
 [QuerySet methods](#queryset-methods) below.
+
+## Multi-site
+
+If you serve more than one site from the same Django project (different
+domains or `SITE_ID`s), install the companion package
+[`django-notifications-community-sites`](https://github.com/django-notifications-community/django-notifications-community-sites)
+to scope notifications to the current site. The cleanest way is via the
+`sites` extra:
+
+```bash
+pip install "django-notifications-community[sites]"
+```
+
+That pulls the companion in automatically. See its README for the rest
+of the setup (an extra app in `INSTALLED_APPS`, the
+`NOTIFICATIONS_NOTIFICATION_MODEL` setting, and `SITE_ID`).
+
+The companion plugs into the extension hooks added in 1.12.0
+(`notifications.registry`), so views, helpers, and template tags pick up
+site scoping without any change to your code or templates here.
 
 ## Generating notifications
 

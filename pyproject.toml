@@ -37,6 +37,11 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
+[project.optional-dependencies]
+sites = [
+    "django-notifications-community-sites>=1.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/django-notifications-community/django-notifications-community"
 Source = "https://github.com/django-notifications-community/django-notifications-community"

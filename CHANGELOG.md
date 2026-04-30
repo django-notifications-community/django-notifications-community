@@ -23,6 +23,18 @@ for background on why the fork exists.
   - As a side effect, the `RemovedInDjango51Warning: 'index_together' is
     deprecated` that used to fire on every `migrate` under Django 4.2 no
     longer appears.
+  - Added a small extension hook registry at `notifications.registry`
+    (`apply_queryset_filters`, `derive_cache_key`,
+    `collect_invalidation_keys`). Companion packages can register
+    callbacks instead of forking views, helpers, or template tags;
+    with nothing registered the hooks are no-ops and behaviour is
+    unchanged. (#51)
+  - Added a `sites` optional extra:
+    `pip install "django-notifications-community[sites]"` pulls in
+    `django-notifications-community-sites`, which scopes notifications
+    to the current site via the new hook registry. See the
+    [Multi-site](README.md#multi-site) section of the README for
+    details.
 
 ## 1.11.3 (2026-04-15)
 
