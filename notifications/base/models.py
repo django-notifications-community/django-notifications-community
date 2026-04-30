@@ -323,7 +323,9 @@ def notify_handler(verb, **kwargs):
     optional_objs = [(kwargs.pop(opt, None), opt) for opt in ('target', 'action_object')]
     public = bool(kwargs.pop('public', True))
     description = kwargs.pop('description', None)
-    timestamp = kwargs.pop('timestamp', timezone.now())
+    timestamp = kwargs.pop('timestamp', None)
+    if timestamp is None:
+        timestamp = timezone.now()
     Notification = load_notification_model()
     level = kwargs.pop('level', Notification.LEVELS.info)
     actor_for_concrete_model = kwargs.pop('actor_for_concrete_model', True)
