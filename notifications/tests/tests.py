@@ -1338,3 +1338,27 @@ class TimestampNoneTest(TestCase):
         self.assertIsNotNone(n.timestamp)
         self.assertGreaterEqual(n.timestamp, before)
         self.assertLessEqual(n.timestamp, after)
+
+
+class ContentTypeLookupHoistTest(TestCase):
+    """ContentType.get_for_model is resolved once per call, not once per recipient."""
+
+    def test_get_for_model_called_once_per_optional_object(self):
+        from unittest.mock import patch
+
+        from django.contrib.contenttypes.models import ContentType
+
+        from_user = User.objects.create_user(username='ct_from', password='pwd')
+        recipients = [
+            User.objects.create_user(username=f'ct_to_{i}', password='pwd') for i in range(5)
+        ]
+        with patch.object(
+            ContentType.objects,
+            'get_for_model',
+            wraps=ContentType.objects.get_for_model,
+        ) as spy:
+            notify.send(from_user, recipient=recipients, verb='hoist1', action_object=from_user)
+
+        # One lookup for actor, one for action_object, independent of the
+        # number of recipients.
+        self.assertEqual(spy.call_count, 2)
