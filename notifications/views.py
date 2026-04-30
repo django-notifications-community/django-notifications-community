@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView
 
 from notifications import settings as notification_settings
-from notifications.helpers import get_notification_list
+from notifications.helpers import get_notification_list, invalidate_unread_count_cache
 from notifications.swappable import load_notification_model
 from notifications.utils import slug2id
 
@@ -53,6 +53,7 @@ class UnreadNotificationsList(NotificationViewList):
 @login_required
 def mark_all_as_read(request):
     request.user.notifications.mark_all_as_read()
+    invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
@@ -68,6 +69,7 @@ def mark_as_read(request, slug=None):
 
     notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
     notification.mark_as_read()
+    invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
@@ -84,6 +86,7 @@ def mark_as_unread(request, slug=None):
 
     notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
     notification.mark_as_unread()
+    invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
@@ -105,6 +108,7 @@ def delete(request, slug=None):
         notification.save(update_fields=['deleted'])
     else:
         notification.delete()
+    invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 

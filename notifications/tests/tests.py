@@ -997,3 +997,82 @@ class SentUnsentQuerySetTest(TestCase):
         Notification.objects.mark_as_sent()
         Notification.objects.mark_as_unsent()
         self.assertEqual(Notification.objects.unsent().count(), 5)
+
+
+class UnreadCountCacheInvalidationTest(TestCase):
+    """Mutating views must drop the cached unread count.
+
+    Without this the ``{% notifications_unread %}`` badge keeps showing
+    the old number for up to ``CACHE_TIMEOUT`` seconds after the user
+    marks something read or deletes it.
+    """
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.from_user = User.objects.create_user(username='from', password='pwd')
+        self.to_user = User.objects.create_user(username='to', password='pwd')
+        for _ in range(3):
+            notify.send(self.from_user, recipient=self.to_user, verb='pinged')
+        self.client.force_login(self.to_user)
+
+    def _seed_cache(self, value=3):
+        from django.core.cache import cache
+
+        from notifications.templatetags.notifications_tags import unread_count_cache_key
+
+        cache.set(unread_count_cache_key(self.to_user), value, 60)
+
+    def _cache_key(self):
+        from notifications.templatetags.notifications_tags import unread_count_cache_key
+
+        return unread_count_cache_key(self.to_user)
+
+    def test_mark_as_read_drops_cache(self):
+        from django.core.cache import cache
+
+        self._seed_cache()
+        n = self.to_user.notifications.first()
+        self.client.post(reverse('notifications:mark_as_read', kwargs={'slug': n.slug}))
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_mark_as_unread_drops_cache(self):
+        from django.core.cache import cache
+
+        n = self.to_user.notifications.first()
+        n.mark_as_read()
+        self._seed_cache(value=2)
+        self.client.post(reverse('notifications:mark_as_unread', kwargs={'slug': n.slug}))
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_mark_all_as_read_drops_cache(self):
+        from django.core.cache import cache
+
+        self._seed_cache()
+        self.client.post(reverse('notifications:mark_all_as_read'))
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_delete_drops_cache(self):
+        from django.core.cache import cache
+
+        self._seed_cache()
+        n = self.to_user.notifications.first()
+        self.client.post(reverse('notifications:delete', kwargs={'slug': n.slug}))
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_live_unread_list_with_mark_as_read_drops_cache(self):
+        """``?mark_as_read=true`` on the live JSON list also bulk-marks rows."""
+        from django.core.cache import cache
+
+        self._seed_cache()
+        self.client.get(reverse('notifications:live_unread_notification_list') + '?mark_as_read=true')
+        self.assertIsNone(cache.get(self._cache_key()))
+
+    def test_live_unread_list_without_mark_as_read_keeps_cache(self):
+        """A plain GET should not invalidate the cache."""
+        from django.core.cache import cache
+
+        self._seed_cache(value=42)
+        self.client.get(reverse('notifications:live_unread_notification_list'))
+        self.assertEqual(cache.get(self._cache_key()), 42)

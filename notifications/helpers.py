@@ -1,7 +1,13 @@
+from django.core.cache import cache
 from django.forms import model_to_dict
 
 from notifications.settings import get_config
+from notifications.templatetags.notifications_tags import unread_count_cache_key
 from notifications.utils import id2slug
+
+
+def invalidate_unread_count_cache(user):
+    cache.delete(unread_count_cache_key(user))
 
 
 def get_object_url(instance, notification, request):
@@ -81,4 +87,5 @@ def get_notification_list(request, method_name='all'):
             notification_ids.append(notification.id)
     if notification_ids:
         qs.filter(id__in=notification_ids).update(unread=False)
+        invalidate_unread_count_cache(request.user)
     return notification_list
