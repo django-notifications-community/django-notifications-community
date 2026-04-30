@@ -1,4 +1,5 @@
 """Django notifications settings file"""
+
 from django.conf import settings
 
 CONFIG_DEFAULTS = {

@@ -71,10 +71,7 @@ def register_notify_callbacks(
             cb = cb.strip()
             if cb:
                 if not _JS_IDENTIFIER_RE.match(cb):
-                    raise ValueError(
-                        f"Invalid callback name: {cb!r}. "
-                        "Must be a valid JavaScript identifier."
-                    )
+                    raise ValueError(f'Invalid callback name: {cb!r}. Must be a valid JavaScript identifier.')
                 callback_list.append(cb)
 
     config = {
@@ -98,7 +95,8 @@ def register_notify_callbacks(
     if nonce:
         return format_html(
             '<script type="application/json" id="notify-config" nonce="{}">{}</script>',
-            nonce, mark_safe(config_json),
+            nonce,
+            mark_safe(config_json),
         )
     return format_html(
         '<script type="application/json" id="notify-config">{}</script>',
@@ -114,7 +112,8 @@ def live_notify_badge(context, badge_class='live_notify_badge'):
 
     return format_html(
         "<span class='{}'>{}</span>",
-        badge_class, get_cached_notification_unread_count(user),
+        badge_class,
+        get_cached_notification_unread_count(user),
     )
 
 
