@@ -1080,3 +1080,214 @@ class UnreadCountCacheInvalidationTest(TestCase):
         self._seed_cache(value=42)
         self.client.get(reverse('notifications:live_unread_notification_list'))
         self.assertEqual(cache.get(self._cache_key()), 42)
+
+
+class RegistryTest(TestCase):
+    """Pure mechanics of the extension hook registry."""
+
+    def setUp(self):
+        from notifications import registry
+
+        self._saved = (
+            list(registry._queryset_filters),
+            list(registry._cache_key_modifiers),
+            list(registry._cache_invalidation_keys),
+        )
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        from notifications import registry
+
+        registry._queryset_filters[:] = self._saved[0]
+        registry._cache_key_modifiers[:] = self._saved[1]
+        registry._cache_invalidation_keys[:] = self._saved[2]
+
+    def test_apply_queryset_filters_no_op_by_default(self):
+        from notifications.registry import apply_queryset_filters
+
+        sentinel = object()
+        self.assertIs(apply_queryset_filters(sentinel, request=None), sentinel)
+
+    def test_apply_queryset_filters_chains_in_registration_order(self):
+        from notifications.registry import apply_queryset_filters, register_queryset_filter
+
+        order = []
+
+        def first(qs, request):
+            order.append('first')
+            return qs
+
+        def second(qs, request):
+            order.append('second')
+            return qs
+
+        register_queryset_filter(first)
+        register_queryset_filter(second)
+        apply_queryset_filters(object(), request=None)
+        self.assertEqual(order, ['first', 'second'])
+
+    def test_apply_queryset_filters_threads_return_value(self):
+        from notifications.registry import apply_queryset_filters, register_queryset_filter
+
+        register_queryset_filter(lambda qs, r: f'{qs}_a')
+        register_queryset_filter(lambda qs, r: f'{qs}_b')
+        self.assertEqual(apply_queryset_filters('start', None), 'start_a_b')
+
+    def test_derive_cache_key_returns_base_when_empty(self):
+        from notifications.registry import derive_cache_key
+
+        self.assertEqual(derive_cache_key('foo', None, None), 'foo')
+
+    def test_derive_cache_key_chains_modifiers(self):
+        from notifications.registry import derive_cache_key, register_cache_key_modifier
+
+        register_cache_key_modifier(lambda key, u, r: f'{key}_a')
+        register_cache_key_modifier(lambda key, u, r: f'{key}_b')
+        self.assertEqual(derive_cache_key('base', None, None), 'base_a_b')
+
+    def test_collect_invalidation_keys_empty_by_default(self):
+        from notifications.registry import collect_invalidation_keys
+
+        self.assertEqual(collect_invalidation_keys(None, None), [])
+
+    def test_collect_invalidation_keys_extends(self):
+        from notifications.registry import collect_invalidation_keys, register_cache_invalidation_keys
+
+        register_cache_invalidation_keys(lambda u, r: ['a'])
+        register_cache_invalidation_keys(lambda u, r: ['b', 'c'])
+        self.assertEqual(collect_invalidation_keys(None, None), ['a', 'b', 'c'])
+
+
+class RegistryIntegrationTest(TestCase):
+    """The hooks actually flow through views, helpers, and template tags."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        from notifications import registry
+
+        cache.clear()
+        self._saved = (
+            list(registry._queryset_filters),
+            list(registry._cache_key_modifiers),
+            list(registry._cache_invalidation_keys),
+        )
+        self.addCleanup(self._restore)
+
+        self.from_user = User.objects.create_user(username='from-reg', password='pwd')
+        self.to_user = User.objects.create_user(username='to-reg', password='pwd')
+        for i in range(4):
+            notify.send(self.from_user, recipient=self.to_user, verb=f'msg{i}', public=(i % 2 == 0))
+        self.client.force_login(self.to_user)
+
+    def _restore(self):
+        from notifications import registry
+
+        registry._queryset_filters[:] = self._saved[0]
+        registry._cache_key_modifiers[:] = self._saved[1]
+        registry._cache_invalidation_keys[:] = self._saved[2]
+
+    def _only_public(self):
+        from notifications.registry import register_queryset_filter
+
+        register_queryset_filter(lambda qs, request: qs.filter(public=True))
+
+    def test_filter_applied_to_unread_view(self):
+        self._only_public()
+        response = self.client.get(reverse('notifications:unread'))
+        self.assertEqual(len(response.context['notifications']), 2)
+
+    def test_filter_applied_to_all_view(self):
+        self._only_public()
+        response = self.client.get(reverse('notifications:all'))
+        self.assertEqual(len(response.context['notifications']), 2)
+
+    def test_filter_blocks_mark_as_read_for_excluded_rows(self):
+        self._only_public()
+        n = Notification.objects.filter(recipient=self.to_user, public=False).first()
+        response = self.client.post(reverse('notifications:mark_as_read', kwargs={'slug': n.slug}))
+        self.assertEqual(response.status_code, 404)
+        n.refresh_from_db()
+        self.assertTrue(n.unread)
+
+    def test_filter_blocks_mark_as_unread_for_excluded_rows(self):
+        self._only_public()
+        n = Notification.objects.filter(recipient=self.to_user, public=False).first()
+        n.mark_as_read()
+        response = self.client.post(reverse('notifications:mark_as_unread', kwargs={'slug': n.slug}))
+        self.assertEqual(response.status_code, 404)
+        n.refresh_from_db()
+        self.assertFalse(n.unread)
+
+    def test_filter_blocks_delete_for_excluded_rows(self):
+        self._only_public()
+        n = Notification.objects.filter(recipient=self.to_user, public=False).first()
+        response = self.client.post(reverse('notifications:delete', kwargs={'slug': n.slug}))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Notification.objects.filter(pk=n.pk).exists())
+
+    def test_filter_scopes_mark_all_as_read(self):
+        self._only_public()
+        self.client.post(reverse('notifications:mark_all_as_read'))
+        public_unread = Notification.objects.filter(recipient=self.to_user, public=True, unread=True).count()
+        private_unread = Notification.objects.filter(recipient=self.to_user, public=False, unread=True).count()
+        self.assertEqual(public_unread, 0)
+        self.assertEqual(private_unread, 2)
+
+    def test_filter_applied_to_live_unread_count(self):
+        self._only_public()
+        response = self.client.get(reverse('notifications:live_unread_notification_count'))
+        self.assertEqual(response.json()['unread_count'], 2)
+
+    def test_filter_applied_to_live_all_count(self):
+        self._only_public()
+        response = self.client.get(reverse('notifications:live_all_notification_count'))
+        self.assertEqual(response.json()['all_count'], 2)
+
+    def test_filter_applied_to_live_unread_list(self):
+        self._only_public()
+        response = self.client.get(reverse('notifications:live_unread_notification_list'))
+        self.assertEqual(response.json()['unread_count'], 2)
+        self.assertEqual(len(response.json()['unread_list']), 2)
+
+    def test_filter_applied_to_has_notification_filter(self):
+        from notifications.registry import register_queryset_filter
+        from notifications.templatetags.notifications_tags import has_notification
+
+        register_queryset_filter(lambda qs, request: qs.none())
+        self.assertFalse(has_notification(self.to_user))
+
+    def test_cache_key_modifier_applied_to_key_function(self):
+        from notifications.registry import register_cache_key_modifier
+        from notifications.templatetags.notifications_tags import unread_count_cache_key
+
+        register_cache_key_modifier(lambda key, u, r: f'{key}_modded')
+        self.assertEqual(
+            unread_count_cache_key(self.to_user),
+            f'notifications_unread_count_{self.to_user.pk}_modded',
+        )
+
+    def test_cache_key_modifier_applied_to_count_lookup(self):
+        from django.core.cache import cache
+
+        from notifications.registry import register_cache_key_modifier
+        from notifications.templatetags.notifications_tags import get_cached_notification_unread_count
+
+        register_cache_key_modifier(lambda key, u, r: f'{key}_modded')
+        with override_settings(DJANGO_NOTIFICATIONS_CONFIG={'CACHE_TIMEOUT': 60}):
+            count = get_cached_notification_unread_count(self.to_user)
+        self.assertEqual(count, 4)
+        self.assertEqual(cache.get(f'notifications_unread_count_{self.to_user.pk}_modded'), 4)
+        self.assertIsNone(cache.get(f'notifications_unread_count_{self.to_user.pk}'))
+
+    def test_invalidation_keys_dropped_on_mutation(self):
+        from django.core.cache import cache
+
+        from notifications.registry import register_cache_invalidation_keys
+
+        extra = 'companion_unread_count_key'
+        register_cache_invalidation_keys(lambda u, r: [extra])
+        cache.set(extra, 99, 60)
+        n = self.to_user.notifications.first()
+        self.client.post(reverse('notifications:mark_as_read', kwargs={'slug': n.slug}))
+        self.assertIsNone(cache.get(extra))

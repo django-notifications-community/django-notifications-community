@@ -13,6 +13,7 @@ from django.views.generic import ListView
 
 from notifications import settings as notification_settings
 from notifications.helpers import get_notification_list, invalidate_unread_count_cache
+from notifications.registry import apply_queryset_filters
 from notifications.swappable import load_notification_model
 from notifications.utils import slug2id
 
@@ -35,6 +36,7 @@ class AllNotificationsList(NotificationViewList):
             qset = self.request.user.notifications.active()
         else:
             qset = self.request.user.notifications.all()
+        qset = apply_queryset_filters(qset, self.request)
         return qset.select_related(
             'actor_content_type', 'target_content_type', 'action_object_content_type'
         ).prefetch_related('actor', 'target', 'action_object')
@@ -42,18 +44,17 @@ class AllNotificationsList(NotificationViewList):
 
 class UnreadNotificationsList(NotificationViewList):
     def get_queryset(self):
-        return (
-            self.request.user.notifications.unread()
-            .select_related('actor_content_type', 'target_content_type', 'action_object_content_type')
-            .prefetch_related('actor', 'target', 'action_object')
-        )
+        qset = apply_queryset_filters(self.request.user.notifications.unread(), self.request)
+        return qset.select_related(
+            'actor_content_type', 'target_content_type', 'action_object_content_type'
+        ).prefetch_related('actor', 'target', 'action_object')
 
 
 @require_POST
 @login_required
 def mark_all_as_read(request):
-    request.user.notifications.mark_all_as_read()
-    invalidate_unread_count_cache(request.user)
+    apply_queryset_filters(request.user.notifications.all(), request).mark_all_as_read()
+    invalidate_unread_count_cache(request.user, request)
 
     _next = request.POST.get('next')
 
@@ -67,9 +68,10 @@ def mark_all_as_read(request):
 def mark_as_read(request, slug=None):
     notification_id = slug2id(slug)
 
-    notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
+    qs = apply_queryset_filters(Notification.objects.all(), request)
+    notification = get_object_or_404(qs, recipient=request.user, id=notification_id)
     notification.mark_as_read()
-    invalidate_unread_count_cache(request.user)
+    invalidate_unread_count_cache(request.user, request)
 
     _next = request.POST.get('next')
 
@@ -84,9 +86,10 @@ def mark_as_read(request, slug=None):
 def mark_as_unread(request, slug=None):
     notification_id = slug2id(slug)
 
-    notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
+    qs = apply_queryset_filters(Notification.objects.all(), request)
+    notification = get_object_or_404(qs, recipient=request.user, id=notification_id)
     notification.mark_as_unread()
-    invalidate_unread_count_cache(request.user)
+    invalidate_unread_count_cache(request.user, request)
 
     _next = request.POST.get('next')
 
@@ -101,14 +104,15 @@ def mark_as_unread(request, slug=None):
 def delete(request, slug=None):
     notification_id = slug2id(slug)
 
-    notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
+    qs = apply_queryset_filters(Notification.objects.all(), request)
+    notification = get_object_or_404(qs, recipient=request.user, id=notification_id)
 
     if notification_settings.get_config()['SOFT_DELETE']:
         notification.deleted = True
         notification.save(update_fields=['deleted'])
     else:
         notification.delete()
-    invalidate_unread_count_cache(request.user)
+    invalidate_unread_count_cache(request.user, request)
 
     _next = request.POST.get('next')
 
@@ -126,7 +130,7 @@ def live_unread_notification_count(request):
         data = {'unread_count': 0}
     else:
         data = {
-            'unread_count': request.user.notifications.unread().count(),
+            'unread_count': apply_queryset_filters(request.user.notifications.unread(), request).count(),
         }
     return JsonResponse(data)
 
@@ -142,7 +146,10 @@ def live_unread_notification_list(request):
 
     unread_list = get_notification_list(request, 'unread')
 
-    data = {'unread_count': request.user.notifications.unread().count(), 'unread_list': unread_list}
+    data = {
+        'unread_count': apply_queryset_filters(request.user.notifications.unread(), request).count(),
+        'unread_list': unread_list,
+    }
     return JsonResponse(data)
 
 
@@ -157,7 +164,7 @@ def live_all_notification_list(request):
 
     all_list = get_notification_list(request)
 
-    data = {'all_count': _all_notification_qs(request.user).count(), 'all_list': all_list}
+    data = {'all_count': _all_notification_qs(request).count(), 'all_list': all_list}
     return JsonResponse(data)
 
 
@@ -168,13 +175,14 @@ def live_all_notification_count(request):
         data = {'all_count': 0}
     else:
         data = {
-            'all_count': _all_notification_qs(request.user).count(),
+            'all_count': _all_notification_qs(request).count(),
         }
     return JsonResponse(data)
 
 
-def _all_notification_qs(user):
+def _all_notification_qs(request):
     """Return the 'all notifications' queryset, excluding soft-deleted when enabled."""
+    qs = apply_queryset_filters(request.user.notifications.all(), request)
     if notification_settings.get_config()['SOFT_DELETE']:
-        return user.notifications.active()
-    return user.notifications.all()
+        return qs.active()
+    return qs
