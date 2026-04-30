@@ -14,9 +14,16 @@ from notifications import settings
 register = Library()
 
 
+def unread_count_cache_key(user):
+    return f'notifications_unread_count_{user.pk}'
+
+
 def get_cached_notification_unread_count(user):
-    cache_key = f'notifications_unread_count_{user.pk}'
-    return cache.get_or_set(cache_key, user.notifications.unread().count, settings.get_config()['CACHE_TIMEOUT'])
+    return cache.get_or_set(
+        unread_count_cache_key(user),
+        user.notifications.unread().count,
+        settings.get_config()['CACHE_TIMEOUT'],
+    )
 
 
 @register.simple_tag(takes_context=True)

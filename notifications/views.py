@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.encoding import iri_to_uri
@@ -14,9 +15,14 @@ from django.views.generic import ListView
 from notifications import settings as notification_settings
 from notifications.helpers import get_notification_list
 from notifications.swappable import load_notification_model
+from notifications.templatetags.notifications_tags import unread_count_cache_key
 from notifications.utils import slug2id
 
 Notification = load_notification_model()
+
+
+def _invalidate_unread_count_cache(user):
+    cache.delete(unread_count_cache_key(user))
 
 
 class NotificationViewList(LoginRequiredMixin, ListView):
@@ -53,6 +59,7 @@ class UnreadNotificationsList(NotificationViewList):
 @login_required
 def mark_all_as_read(request):
     request.user.notifications.mark_all_as_read()
+    _invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
@@ -68,6 +75,7 @@ def mark_as_read(request, slug=None):
 
     notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
     notification.mark_as_read()
+    _invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
@@ -84,6 +92,7 @@ def mark_as_unread(request, slug=None):
 
     notification = get_object_or_404(Notification, recipient=request.user, id=notification_id)
     notification.mark_as_unread()
+    _invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
@@ -105,6 +114,7 @@ def delete(request, slug=None):
         notification.save(update_fields=['deleted'])
     else:
         notification.delete()
+    _invalidate_unread_count_cache(request.user)
 
     _next = request.POST.get('next')
 
