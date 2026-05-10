@@ -8,6 +8,18 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## 1.9.0.post1 (2026-05-10)
+
+Metadata-only re-release of 1.9.0. The original 1.9.0 wheel and sdist
+were published with `requires-python>=3.10`, so installs on Python 3.9
+failed at the resolver even though the code itself runs fine on 3.9
+when paired with Django 4.2. This `.post1` lowers `requires-python` to
+`>=3.9` and adds the matching trove classifier; no functional changes
+to the `notifications` package (only `__version__` was bumped). (#60)
+
+If you're on Python 3.9, install with `Django>=4.2,<5.0` — Django 5.1
+and later require Python 3.10+.
+
 ## 1.9.0 (community fork release, 2026-04-11)
 
 First release published by the community fork. Code contents are identical to

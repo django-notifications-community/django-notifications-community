@@ -7,7 +7,7 @@ name = "django-notifications-community"
 dynamic = ["version"]
 description = "GitHub notifications alike app for Django (community fork)."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = "BSD-3-Clause"
 license-files = ["LICENSE.txt"]
 keywords = ["django", "notifications", "github", "action", "event", "stream"]
@@ -35,6 +35,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
