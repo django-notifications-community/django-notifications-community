@@ -94,7 +94,7 @@ Nomenclature is based on the Activity Streams spec:
 
 ## Requirements
 
-- Python 3.10, 3.11, 3.12, 3.13
+- Python 3.10, 3.11, 3.12, 3.13, 3.14
 - Django 5.2, 6.0 (Django 6.0 requires Python 3.12+)
 
 If you need Django 4.2 or 5.1, pin
