@@ -18,6 +18,10 @@ for background on why the fork exists.
     plumbing instead. Many to many fields are skipped and file fields
     are reduced to their stored path, neither being JSON encodable.
     (#73)
+  - Added `API_EXCLUDED_FIELDS` to `DJANGO_NOTIFICATIONS_CONFIG`, a list
+    of model fields to keep out of the json endpoints. Useful once
+    serialization follows the model, for anything stored on a swapped-in
+    model that should not be read back by the recipient.
 
 ## 1.12.1 (2026-04-30)
 

@@ -545,6 +545,14 @@ class NotificationTestPages(TestCase):
         ]:
             self.assertNotIn(field, notification)
 
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True, 'API_EXCLUDED_FIELDS': ['description']})
+    def test_list_api_honors_api_excluded_fields(self):
+        self.login('to', 'pwd')
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        notification = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        self.assertNotIn('description', notification)
+        self.assertIn('verb', notification)
+
     def test_live_update_tags(self):
         from django.shortcuts import render
 

@@ -4,7 +4,7 @@ from unittest import skipUnless
 
 from django.contrib.auth.models import User
 from django.db import connection
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
@@ -147,6 +147,13 @@ class TestSwappedModelFieldsInApi(TestCase):
         tag_queries = [q for q in queries.captured_queries if 'sample_notifications_tag' in q['sql']]
 
         self.assertEqual(tag_queries, [])
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True, 'API_EXCLUDED_FIELDS': ['details']})
+    def test_api_excluded_fields_holds_back_a_custom_field(self):
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        struct = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        self.assertNotIn('details', struct)
+        self.assertIn('verb', struct)
 
     def test_file_field_is_serialized_as_its_path(self):
         notification = Notification.objects.get(recipient=self.to_user)
