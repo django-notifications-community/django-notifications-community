@@ -341,7 +341,13 @@ add to a [swapped-in notification model](#abstractnotification-model) shows up
 in the payload too. The recipient and the content type / object id columns
 behind the generic relations are left out: `actor`, `target`, and
 `action_object` are rendered as strings instead, and `data` is attached
-separately when it holds something.
+separately when it holds something. Two kinds of field are skipped, since
+neither survives JSON encoding: many to many fields, and file fields, which
+are reduced to their stored path.
+
+Since custom fields land in the same dict, a field named `slug`, `actor`,
+`target`, `action_object`, `data`, or one of the `_url` keys below is
+overwritten by the value the package puts there. Name yours something else.
 
 Each list entry also exposes `target_url`, `actor_url`, and
 `action_object_url`, which come from `Model.get_absolute_url()` by default.
