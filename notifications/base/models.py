@@ -312,6 +312,25 @@ class AbstractNotification(models.Model):
             return self.target_object_id
 
 
+def _require_model_instance(arg_name, obj):
+    """Reject anything that isn't a saved model instance.
+
+    Without this, a caller passing a model *class* (e.g. ``notify.send(User, ...)``)
+    silently writes the ``property`` descriptor's repr into the object_id
+    CharField, which later crashes any view that resolves the GenericForeignKey.
+    """
+    if not isinstance(obj, models.Model):
+        raise TypeError(
+            f"notify.send() expected a model instance for '{arg_name}', "
+            f'got {obj!r}. Pass an instance, not a class.'
+        )
+    if obj.pk is None:
+        raise ValueError(
+            f"notify.send() received an unsaved instance for '{arg_name}' "
+            '(pk is None). Save it before sending.'
+        )
+
+
 def notify_handler(verb, **kwargs):
     """
     Handler function to create Notification instance upon action signal call.
@@ -320,7 +339,11 @@ def notify_handler(verb, **kwargs):
     kwargs.pop('signal', None)
     recipient = kwargs.pop('recipient')
     actor = kwargs.pop('sender')
+    _require_model_instance('sender', actor)
     optional_objs = [(kwargs.pop(opt, None), opt) for opt in ('target', 'action_object')]
+    for obj, opt in optional_objs:
+        if obj is not None:
+            _require_model_instance(opt, obj)
     public = bool(kwargs.pop('public', True))
     description = kwargs.pop('description', None)
     timestamp = kwargs.pop('timestamp', None)
