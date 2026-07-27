@@ -1,8 +1,10 @@
+import json
 import os
 from unittest import skipUnless
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.urls import reverse
 
 from notifications.signals import notify
 from notifications.swappable import load_notification_model
@@ -74,3 +76,39 @@ class TestMultiRecipientKwargs(TestCase):
             notification = Notification.objects.get(recipient=user)
             self.assertIn('extra_key', notification.data)
             self.assertEqual(notification.data['extra_key'], 'extra_value')
+
+
+@skipUnless(os.environ.get('SAMPLE_APP', False), 'Running tests on standard django-notifications models')
+class TestSwappedModelFieldsInApi(TestCase):
+    """Regression test for issue #73: fields added to a swapped model must
+    show up in the json endpoints."""
+
+    def setUp(self):
+        self.from_user = User.objects.create_user(username='from_api', password='pwd', email='a@example.com')
+        self.to_user = User.objects.create_user(username='to_api', password='pwd', email='b@example.com')
+        notify.send(
+            self.from_user,
+            recipient=self.to_user,
+            verb='commented',
+            action_object=self.from_user,
+            details='custom field value',
+        )
+        self.client.login(username='to_api', password='pwd')
+
+    def test_custom_field_in_all_list(self):
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        struct = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        self.assertIn('details', struct)
+        self.assertEqual(struct['details'], 'custom field value')
+
+    def test_custom_field_in_unread_list(self):
+        response = self.client.get(reverse('notifications:live_unread_notification_list'))
+        struct = json.loads(response.content.decode('utf-8'))['unread_list'][0]
+        self.assertIn('details', struct)
+        self.assertEqual(struct['details'], 'custom field value')
+
+    def test_plumbing_fields_stay_out(self):
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        struct = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        for field in ['recipient', 'actor_content_type', 'actor_object_id']:
+            self.assertNotIn(field, struct)

@@ -6,6 +6,21 @@ from notifications.settings import get_config
 from notifications.templatetags.notifications_tags import unread_count_cache_key
 from notifications.utils import id2slug
 
+# Excluded rather than allow-listed, so extra fields on a swapped-in
+# model reach the json endpoints. The generic relations are rendered as
+# strings below, ``data`` is attached separately, and the recipient is
+# always the requesting user.
+EXCLUDED_API_FIELDS = (
+    'recipient',
+    'actor_content_type',
+    'actor_object_id',
+    'target_content_type',
+    'target_object_id',
+    'action_object_content_type',
+    'action_object_object_id',
+    'data',
+)
+
 
 def invalidate_unread_count_cache(user, request=None):
     """Drop the cached unread badge count(s) for ``user``.
@@ -59,20 +74,7 @@ def get_notification_list(request, method_name='all'):
         'actor', 'target', 'action_object'
     )
     for notification in qs[0:num_to_fetch]:
-        struct = model_to_dict(
-            notification,
-            fields=[
-                'id',
-                'level',
-                'unread',
-                'verb',
-                'description',
-                'timestamp',
-                'public',
-                'deleted',
-                'emailed',
-            ],
-        )
+        struct = model_to_dict(notification, exclude=EXCLUDED_API_FIELDS)
         struct['slug'] = id2slug(notification.id)
         if notification.actor:
             struct['actor'] = str(notification.actor)
