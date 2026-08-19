@@ -8,6 +8,7 @@ CONFIG_DEFAULTS = {
     'SOFT_DELETE': False,
     'NUM_TO_FETCH': 10,
     'CACHE_TIMEOUT': 2,
+    'API_EXCLUDED_FIELDS': (),
 }
 
 
