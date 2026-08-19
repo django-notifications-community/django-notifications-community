@@ -8,7 +8,7 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
-## Unreleased
+## 1.12.2 (2026-08-19)
 
   - Fixed the json endpoints dropping fields declared on a swapped-in
     notification model. `get_notification_list` passed a hard coded
@@ -29,6 +29,8 @@ for background on why the fork exists.
     rather than on the column. Assignment now follows the model's own
     concrete fields, takes either the instance or the raw pk for a
     foreign key, and no longer depends on `USE_JSONFIELD`. (#78)
+
+  No migrations. Drop-in upgrade from 1.12.1.
 
 ## 1.12.1 (2026-04-30)
 
