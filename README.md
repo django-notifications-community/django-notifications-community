@@ -158,6 +158,7 @@ DJANGO_NOTIFICATIONS_CONFIG = {
     'SOFT_DELETE': False,
     'NUM_TO_FETCH': 10,
     'CACHE_TIMEOUT': 2,
+    'API_EXCLUDED_FIELDS': (),
 }
 ```
 
@@ -168,6 +169,7 @@ DJANGO_NOTIFICATIONS_CONFIG = {
 | `SOFT_DELETE`   | `False` | Flip the delete view from row removal to setting `deleted=True`. See [Soft delete](#soft-delete). |
 | `NUM_TO_FETCH`  | `10`    | Default page size for the live-updater JSON endpoints.                                            |
 | `CACHE_TIMEOUT` | `2`     | Seconds to cache `user.notifications.unread().count`. `0` disables caching.                       |
+| `API_EXCLUDED_FIELDS` | `()` | Extra model fields to keep out of the JSON endpoints. See [Live-updater API](#live-updater-api). |
 
 ### Extra data
 
@@ -342,10 +344,35 @@ notifications (read and unread) and follow the same key pattern —
 `{scope}_count` and `{scope}_list`, where `scope` mirrors the endpoint
 segment (so `all_count`, `all_list`).
 
-Notification JSON is produced via Django's `model_to_dict`. Each list entry
-also exposes `target_url`, `actor_url`, and `action_object_url`, which come
-from `Model.get_absolute_url()` by default. You can override the URL
-specifically for notifications by implementing
+Notification JSON is produced via Django's `model_to_dict`, so any field you
+add to a [swapped-in notification model](#abstractnotification-model) shows up
+in the payload too. The recipient and the content type / object id columns
+behind the generic relations are left out: `actor`, `target`, and
+`action_object` are rendered as strings instead, and `data` is attached
+separately when it holds something. Two kinds of field are skipped, since
+neither survives JSON encoding: many to many fields, and file fields, which
+are reduced to their stored path.
+
+Since custom fields land in the same dict, a field named `slug`, `actor`,
+`target`, `action_object`, `data`, or one of the `_url` keys below is
+overwritten by the value the package puts there. Name yours something else.
+
+Following the model means a field you would rather keep private goes out
+with the rest. List those in `API_EXCLUDED_FIELDS`:
+
+```python
+DJANGO_NOTIFICATIONS_CONFIG = {
+    'API_EXCLUDED_FIELDS': ['moderation_note', 'internal_score'],
+}
+```
+
+The endpoints are per user and require an authenticated request, so a field
+is only ever visible to the recipient. Worth a look anyway if you store
+something on the model that the recipient should not read back.
+
+Each list entry also exposes `target_url`, `actor_url`, and
+`action_object_url`, which come from `Model.get_absolute_url()` by default.
+You can override the URL specifically for notifications by implementing
 `Model.get_url_for_notifications(notification, request)` on the related
 model.
 

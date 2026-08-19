@@ -521,6 +521,38 @@ class NotificationTestPages(TestCase):
         self.assertEqual(notification['target_url'], f'bar/{target_object.id}/')
         self.assertEqual(notification['actor_url'], f'foo/{from_customer.id}/')
 
+    def test_list_api_serializes_model_fields(self):
+        """Regression test for issue #73: the payload follows the model."""
+        self.login('to', 'pwd')
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        notification = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        for field in ['id', 'level', 'unread', 'verb', 'description', 'timestamp', 'public', 'deleted', 'emailed']:
+            self.assertIn(field, notification)
+
+    def test_list_api_hides_plumbing_fields(self):
+        """Regression test for issue #73: the excluded columns stay excluded."""
+        self.login('to', 'pwd')
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        notification = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        for field in [
+            'recipient',
+            'actor_content_type',
+            'actor_object_id',
+            'target_content_type',
+            'target_object_id',
+            'action_object_content_type',
+            'action_object_object_id',
+        ]:
+            self.assertNotIn(field, notification)
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True, 'API_EXCLUDED_FIELDS': ['description']})
+    def test_list_api_honors_api_excluded_fields(self):
+        self.login('to', 'pwd')
+        response = self.client.get(reverse('notifications:live_all_notification_list'))
+        notification = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        self.assertNotIn('description', notification)
+        self.assertIn('verb', notification)
+
     def test_live_update_tags(self):
         from django.shortcuts import render
 

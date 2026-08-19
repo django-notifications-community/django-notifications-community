@@ -1,10 +1,48 @@
 from django.core.cache import cache
+from django.db.models.fields.files import FieldFile
 from django.forms import model_to_dict
 
 from notifications.registry import apply_queryset_filters, collect_invalidation_keys
 from notifications.settings import get_config
 from notifications.templatetags.notifications_tags import unread_count_cache_key
 from notifications.utils import id2slug
+
+# Excluded rather than allow-listed, so extra fields on a swapped-in
+# model reach the json endpoints. The generic relations are rendered as
+# strings below, ``data`` is attached separately, and the recipient is
+# the requesting user, since the queryset starts from
+# request.user.notifications.
+EXCLUDED_API_FIELDS = (
+    'recipient',
+    'actor_content_type',
+    'actor_object_id',
+    'target_content_type',
+    'target_object_id',
+    'action_object_content_type',
+    'action_object_object_id',
+    'data',
+)
+
+
+def notification_to_dict(notification):
+    """Serialize a notification's own fields for the json endpoints.
+
+    Many to many fields are skipped: ``value_from_object`` hands back
+    model instances, which JsonResponse cannot encode, and reading them
+    costs a query per notification. File fields are reduced to the
+    stored path for the same reason. Projects hold back their own fields
+    with ``API_EXCLUDED_FIELDS``.
+    """
+    exclude = (
+        EXCLUDED_API_FIELDS
+        + tuple(get_config()['API_EXCLUDED_FIELDS'])
+        + tuple(f.name for f in notification._meta.many_to_many)
+    )
+    struct = model_to_dict(notification, exclude=exclude)
+    for key, value in struct.items():
+        if isinstance(value, FieldFile):
+            struct[key] = value.name
+    return struct
 
 
 def invalidate_unread_count_cache(user, request=None):
@@ -59,20 +97,8 @@ def get_notification_list(request, method_name='all'):
         'actor', 'target', 'action_object'
     )
     for notification in qs[0:num_to_fetch]:
-        struct = model_to_dict(
-            notification,
-            fields=[
-                'id',
-                'level',
-                'unread',
-                'verb',
-                'description',
-                'timestamp',
-                'public',
-                'deleted',
-                'emailed',
-            ],
-        )
+        struct = notification_to_dict(notification)
+        # These keys win over anything the model declares under the same name.
         struct['slug'] = id2slug(notification.id)
         if notification.actor:
             struct['actor'] = str(notification.actor)

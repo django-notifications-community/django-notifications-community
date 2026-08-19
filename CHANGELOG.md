@@ -8,6 +8,21 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## Unreleased
+
+  - Fixed the json endpoints dropping fields declared on a swapped-in
+    notification model. `get_notification_list` passed a hard coded
+    field list to `model_to_dict`, so `api/unread_list/` and
+    `api/all_list/` only ever returned the fields of the stock model.
+    Serialization now follows the model and excludes the internal
+    plumbing instead. Many to many fields are skipped and file fields
+    are reduced to their stored path, neither being JSON encodable.
+    (#73)
+  - Added `API_EXCLUDED_FIELDS` to `DJANGO_NOTIFICATIONS_CONFIG`, a list
+    of model fields to keep out of the json endpoints. Useful once
+    serialization follows the model, for anything stored on a swapped-in
+    model that should not be read back by the recipient.
+
 ## 1.12.1 (2026-04-30)
 
   - Fixed `notify.send(..., data={...})` silently producing
