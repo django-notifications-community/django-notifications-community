@@ -23,7 +23,7 @@ from notifications.base.models import notify_handler
 from notifications.helpers import get_num_to_fetch, get_object_url
 from notifications.signals import notify
 from notifications.swappable import load_notification_model
-from notifications.tests.test_models.models import Customer, TargetObject
+from notifications.tests.test_models.models import CategorizedNotification, Category, Customer, TargetObject
 from notifications.utils import id2slug, slug2id
 
 Notification = load_notification_model()
@@ -1356,6 +1356,33 @@ class DataKwargTest(TestCase):
         )
         self.assertEqual(payload, {'foo': 'bar'})
 
+    def test_explicit_data_reaches_every_recipient(self):
+        other = User.objects.create_user(username='dk_to2', password='pwd')
+        notify.send(
+            self.from_user, recipient=[self.to_user, other], verb='dk5', data={'foo': 'bar'}, extra='zzz'
+        )
+        for user in (self.to_user, other):
+            n = Notification.objects.get(verb='dk5', recipient=user)
+            self.assertEqual(n.data, {'foo': 'bar', 'extra': 'zzz'})
+
+    def test_for_concrete_model_kwargs_are_not_stored(self):
+        notify.send(
+            self.from_user,
+            recipient=self.to_user,
+            verb='dk6',
+            target=self.from_user,
+            actor_for_concrete_model=True,
+            target_for_concrete_model=False,
+        )
+        n = Notification.objects.get(verb='dk6')
+        self.assertIsNone(n.data)
+
+    def test_kwarg_shadowing_a_property_goes_to_data(self):
+        """``slug`` is a read-only property, not a field, so it must not be assigned."""
+        notify.send(self.from_user, recipient=self.to_user, verb='dk7', slug='xyz')
+        n = Notification.objects.get(verb='dk7')
+        self.assertEqual(n.data, {'slug': 'xyz'})
+
 
 class TimestampNoneTest(TestCase):
     """notify.send(..., timestamp=None) should default to timezone.now()."""
@@ -1394,3 +1421,73 @@ class ContentTypeLookupHoistTest(TestCase):
         # One lookup for actor, one for action_object, independent of the
         # number of recipients.
         self.assertEqual(spy.call_count, 2)
+
+
+@override_settings(NOTIFICATIONS_NOTIFICATION_MODEL='test_models.CategorizedNotification')
+class CustomModelFieldKwargsTest(TestCase):
+    """Kwargs naming a field on a swapped-in model set the column, not ``data`` (#78)."""
+
+    def setUp(self):
+        self.actor = User.objects.create_user(username='fk_actor', password='pwd')
+        self.recipient = User.objects.create_user(username='fk_recipient', password='pwd')
+        self.other_recipient = User.objects.create_user(username='fk_other', password='pwd')
+        self.category = Category.objects.create(name='sports')
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True})
+    def test_foreign_key_instance_sets_the_relation(self):
+        notify.send(self.actor, recipient=self.recipient, verb='commented', category=self.category)
+
+        notification = CategorizedNotification.objects.get(recipient=self.recipient)
+        self.assertEqual(notification.category, self.category)
+        self.assertFalse(notification.data)
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True})
+    def test_foreign_key_accepts_the_raw_pk(self):
+        notify.send(self.actor, recipient=self.recipient, verb='commented', category_id=self.category.pk)
+
+        notification = CategorizedNotification.objects.get(recipient=self.recipient)
+        self.assertEqual(notification.category_id, self.category.pk)
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True})
+    def test_field_and_data_kwargs_are_split(self):
+        notify.send(
+            self.actor,
+            recipient=self.recipient,
+            verb='commented',
+            category=self.category,
+            url='/some/path/',
+        )
+
+        notification = CategorizedNotification.objects.get(recipient=self.recipient)
+        self.assertEqual(notification.category, self.category)
+        self.assertEqual(notification.data, {'url': '/some/path/'})
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True})
+    def test_every_recipient_gets_the_foreign_key(self):
+        notify.send(
+            self.actor,
+            recipient=[self.recipient, self.other_recipient],
+            verb='commented',
+            category=self.category,
+            url='/some/path/',
+        )
+
+        for user in (self.recipient, self.other_recipient):
+            notification = CategorizedNotification.objects.get(recipient=user)
+            self.assertEqual(notification.category, self.category)
+            self.assertEqual(notification.data, {'url': '/some/path/'})
+
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': False})
+    def test_custom_field_is_set_without_the_json_field(self):
+        """USE_JSONFIELD gates the data blob, not model fields."""
+        notify.send(
+            self.actor,
+            recipient=self.recipient,
+            verb='commented',
+            category=self.category,
+            unknown_key='value',
+        )
+
+        notification = CategorizedNotification.objects.get(recipient=self.recipient)
+        self.assertEqual(notification.category, self.category)
+        self.assertFalse(notification.data)
