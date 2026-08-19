@@ -41,14 +41,21 @@ on every commit so issues get caught before they reach CI.
 The full CI matrix runs via `tox`:
 
 ```bash
-tox                     # all envs
-tox -e py312-django52   # a single env
+tox                            # all envs
+tox -e py312-django52          # a single env
+tox -e py312-django52-sample   # same, against the swapped-in model
 ```
+
+Every env has a `-sample` twin that sets `SAMPLE_APP=1`, which swaps the
+notification model for the one in `notifications/tests/sample_notifications`.
+Several tests are skipped without it, so run both when you touch anything
+model related.
 
 You can also run a quick single-version check without tox:
 
 ```bash
 uv run python manage.py test
+SAMPLE_APP=1 uv run python manage.py test
 ```
 
 Tests live in `notifications/tests/` and use Django's built-in test runner.
