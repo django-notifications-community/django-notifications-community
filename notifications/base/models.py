@@ -331,6 +331,19 @@ def _require_model_instance(arg_name, obj):
         )
 
 
+def _concrete_field_names(model):
+    """Names assignable on a ``model`` instance.
+
+    Attnames are included, so a foreign key accepts ``category`` or
+    ``category_id``.
+    """
+    names = set()
+    for field in model._meta.fields:
+        names.add(field.name)
+        names.add(field.attname)
+    return names
+
+
 def notify_handler(verb, **kwargs):
     """
     Handler function to create Notification instance upon action signal call.
@@ -362,6 +375,21 @@ def notify_handler(verb, **kwargs):
         if obj is not None
     }
 
+    # Split leftover kwargs into model fields and free-form data, once rather
+    # than per recipient.
+    extra_data = dict(kwargs.pop('data', None) or {})
+    field_kwargs = {}
+    model_field_names = _concrete_field_names(Notification)
+    for key, value in kwargs.items():
+        if key.endswith('_for_concrete_model'):
+            continue
+        if key in model_field_names:
+            field_kwargs[key] = value
+        else:
+            extra_data[key] = value
+
+    use_jsonfield = notifications_settings.get_config()['USE_JSONFIELD']
+
     # Check if User or Group
     if isinstance(recipient, Group):
         recipients = recipient.user_set.all()
@@ -390,21 +418,11 @@ def notify_handler(verb, **kwargs):
                 setattr(newnotify, f'{opt}_object_id', obj.pk)
                 setattr(newnotify, f'{opt}_content_type', optional_content_types[opt])
 
-        if kwargs and notifications_settings.get_config()['USE_JSONFIELD']:
-            # Seed data_kwargs with the explicit data= payload so it
-            # survives the loop. Without this, the trailing
-            # ``newnotify.data = data_kwargs`` would clobber whatever
-            # the loop set via ``setattr(newnotify, 'data', ...)``.
-            data_kwargs = dict(kwargs.pop('data', None) or {})
-            for key in list(kwargs.keys()):
-                if key.endswith('_for_concrete_model'):
-                    continue
-                if hasattr(newnotify, key):
-                    setattr(newnotify, key, kwargs[key])
-                else:
-                    data_kwargs[key] = kwargs[key]
-            if data_kwargs:
-                newnotify.data = data_kwargs
+        for key, value in field_kwargs.items():
+            setattr(newnotify, key, value)
+
+        if extra_data and use_jsonfield:
+            newnotify.data = dict(extra_data)
 
         new_notifications.append(newnotify)
 

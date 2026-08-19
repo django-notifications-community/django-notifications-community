@@ -171,9 +171,15 @@ DJANGO_NOTIFICATIONS_CONFIG = {
 
 ### Extra data
 
-With `USE_JSONFIELD` on, any extra keyword arguments passed to
-`notify.send(...)` are stored on the notification's `.data` attribute, JSON
-serialized. Pass only JSON-serializable values.
+Extra keyword arguments passed to `notify.send(...)` are split by name. A
+kwarg matching a concrete field on the notification model is assigned to
+that field. Everything else is extra data.
+
+With `USE_JSONFIELD` on, the leftover kwargs are stored on the
+notification's `.data` attribute, JSON serialized. Pass only
+JSON-serializable values. With it off, they are dropped. Custom model
+fields are assigned either way, since they do not depend on the JSON
+field.
 
 ### Soft delete
 
@@ -484,6 +490,14 @@ Then point the library at your model in `settings.py`:
 
 ```python
 NOTIFICATIONS_NOTIFICATION_MODEL = 'your_app.Notification'
+```
+
+Extra fields are populated by passing them to `notify.send()`. A foreign
+key takes either the instance or the raw primary key:
+
+```python
+notify.send(actor, recipient=user, verb='commented', category=category)
+notify.send(actor, recipient=user, verb='commented', category_id=category.pk)
 ```
 
 As of 1.11.3, swapping is resolved via Django's built-in app loading rather
