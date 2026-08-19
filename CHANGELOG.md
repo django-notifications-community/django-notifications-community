@@ -21,7 +21,14 @@ for background on why the fork exists.
   - Added `API_EXCLUDED_FIELDS` to `DJANGO_NOTIFICATIONS_CONFIG`, a list
     of model fields to keep out of the json endpoints. Useful once
     serialization follows the model, for anything stored on a swapped-in
-    model that should not be read back by the recipient.
+    model that should not be read back by the recipient. (#77)
+  - Fixed `notify.send()` dropping a kwarg that names a field on a
+    swapped in notification model. The handler picked what to assign
+    with `hasattr`, which is false for a required foreign key on an
+    unsaved instance, so `category=obj` quietly ended up in `data`
+    rather than on the column. Assignment now follows the model's own
+    concrete fields, takes either the instance or the raw pk for a
+    foreign key, and no longer depends on `USE_JSONFIELD`. (#78)
 
 ## 1.12.1 (2026-04-30)
 
