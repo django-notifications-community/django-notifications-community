@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ('-timestamp',),
                 'abstract': False,
-                'index_together': {('recipient', 'unread')},
+                'indexes': [models.Index(fields=['recipient', 'unread'], name='sample_noti_recipie_e2f36b_idx')],
             },
         ),
     ]
