@@ -17,6 +17,11 @@ for background on why the fork exists.
     concrete fields directly. Many to many fields stay out as before,
     since they are not concrete fields.
 
+  - Added Django 6.1 to the CI matrix on Python 3.12 through 3.14 and
+    to the package classifiers. The install bound has allowed 6.1 since
+    1.12.0; the suite now runs against it on every push, in both model
+    modes.
+
 ## 1.12.2 (2026-08-19)
 
   - Fixed the json endpoints dropping fields declared on a swapped-in
