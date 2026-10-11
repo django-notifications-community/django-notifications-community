@@ -10,6 +10,8 @@ from io import StringIO
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.contrib import admin
+from django.contrib.admin.utils import label_for_field
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
@@ -18,8 +20,9 @@ from django.template import Context, Template
 from django.test import RequestFactory, TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.timezone import localtime
+from django.utils.translation import gettext
 
 from notifications.base.models import notify_handler
 from notifications.helpers import get_num_to_fetch, get_object_url
@@ -557,7 +560,7 @@ class NotificationTestPages(TestCase):
         ]:
             self.assertNotIn(field, notification)
 
-    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True, 'API_EXCLUDED_FIELDS': ['description']})
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'API_EXCLUDED_FIELDS': ['description']})
     def test_list_api_honors_api_excluded_fields(self):
         self.login('to', 'pwd')
         response = self.client.get(reverse('notifications:live_all_notification_list'))
@@ -781,6 +784,13 @@ class AdminTest(TestCase):
         content = response.content.decode('utf-8')
         for filter_name in ('level', 'unread', 'public', 'timestamp'):
             self.assertIn(f'data-filter-title="{filter_name}"', content)
+
+    def test_generic_relation_column_labels(self):
+        """The actor, target and action object columns keep their translated labels on Django 6.1."""
+        model_admin = admin.site.get_model_admin(Notification)
+        with translation.override('ru'):
+            for name, label in (('actor', 'actor'), ('target', 'target'), ('action_object', 'action object')):
+                self.assertEqual(label_for_field(name, Notification, model_admin), gettext(label))
 
     def test_mark_unread_action(self):
         """The mark_unread admin action sets selected notifications to unread."""

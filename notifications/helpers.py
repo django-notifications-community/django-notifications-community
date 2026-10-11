@@ -11,7 +11,7 @@ from notifications.utils import id2slug
 # strings below, ``data`` is attached separately, and the recipient is
 # the requesting user, since the queryset starts from
 # request.user.notifications.
-EXCLUDED_API_FIELDS = (
+API_EXCLUDED_FIELDS = (
     'recipient',
     'actor_content_type',
     'actor_object_id',
@@ -26,7 +26,7 @@ EXCLUDED_API_FIELDS = (
 def notification_to_dict(notification):
     """Serialize a notification's concrete fields for the json endpoints, keeping the plumbing and
     ``API_EXCLUDED_FIELDS`` out. File fields are reduced to their stored path."""
-    exclude = set(EXCLUDED_API_FIELDS).union(get_config()['API_EXCLUDED_FIELDS'])
+    exclude = set(API_EXCLUDED_FIELDS).union(get_config()['API_EXCLUDED_FIELDS'])
     struct = {}
     for field in notification._meta.concrete_fields:
         if field.name in exclude:
@@ -91,21 +91,13 @@ def get_notification_list(request, method_name='all'):
         struct = notification_to_dict(notification)
         # These keys win over anything the model declares under the same name.
         struct['slug'] = id2slug(notification.id)
-        if notification.actor:
-            struct['actor'] = str(notification.actor)
-            actor_url = get_object_url(notification.actor, notification, request)
-            if actor_url:
-                struct['actor_url'] = actor_url
-        if notification.target:
-            struct['target'] = str(notification.target)
-            target_url = get_object_url(notification.target, notification, request)
-            if target_url:
-                struct['target_url'] = target_url
-        if notification.action_object:
-            struct['action_object'] = str(notification.action_object)
-            action_object_url = get_object_url(notification.action_object, notification, request)
-            if action_object_url:
-                struct['action_object_url'] = action_object_url
+        for name in ('actor', 'target', 'action_object'):
+            obj = getattr(notification, name)
+            if obj:
+                struct[name] = str(obj)
+                url = get_object_url(obj, notification, request)
+                if url:
+                    struct[f'{name}_url'] = url
         if notification.data:
             struct['data'] = notification.data
         notification_list.append(struct)

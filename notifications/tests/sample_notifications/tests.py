@@ -148,7 +148,7 @@ class TestSwappedModelFieldsInApi(TestCase):
 
         self.assertEqual(tag_queries, [])
 
-    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True, 'API_EXCLUDED_FIELDS': ['details']})
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'API_EXCLUDED_FIELDS': ['details']})
     def test_api_excluded_fields_holds_back_a_custom_field(self):
         response = self.client.get(reverse('notifications:live_all_notification_list'))
         struct = json.loads(response.content.decode('utf-8'))['all_list'][0]

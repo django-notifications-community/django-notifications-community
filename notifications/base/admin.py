@@ -22,3 +22,16 @@ class AbstractNotificationAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.prefetch_related('actor', 'action_object', 'target')
+
+    # Since Django 6.1 the short_description on the fields no longer reaches the admin, so the columns live here.
+    @admin.display(description=_('actor'))
+    def actor(self, obj):
+        return obj.actor
+
+    @admin.display(description=_('target'))
+    def target(self, obj):
+        return obj.target
+
+    @admin.display(description=_('action object'))
+    def action_object(self, obj):
+        return obj.action_object
