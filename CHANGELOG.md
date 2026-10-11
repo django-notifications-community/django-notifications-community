@@ -8,7 +8,7 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
-## Unreleased
+## 1.12.3 (2026-10-11)
 
   - Fixed the json endpoints dropping fields declared with
     `editable=False` on a swapped-in notification model, such as an
@@ -27,6 +27,8 @@ for background on why the fork exists.
     to the package classifiers. The install bound has allowed 6.1 since
     1.12.0; the suite now runs against it on every push, in both model
     modes.
+
+  No migrations. Drop-in upgrade from 1.12.2.
 
 ## 1.12.2 (2026-08-19)
 
