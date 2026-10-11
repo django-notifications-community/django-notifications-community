@@ -557,7 +557,7 @@ class NotificationTestPages(TestCase):
         ]:
             self.assertNotIn(field, notification)
 
-    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'USE_JSONFIELD': True, 'API_EXCLUDED_FIELDS': ['description']})
+    @override_settings(DJANGO_NOTIFICATIONS_CONFIG={'API_EXCLUDED_FIELDS': ['description']})
     def test_list_api_honors_api_excluded_fields(self):
         self.login('to', 'pwd')
         response = self.client.get(reverse('notifications:live_all_notification_list'))
