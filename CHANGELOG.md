@@ -17,6 +17,14 @@ for background on why the fork exists.
     concrete fields directly. Many to many fields stay out as before,
     since they are not concrete fields.
 
+  - Fixed the admin change list losing the translated labels of the
+    actor, target and action object columns on Django 6.1. The model
+    class there holds a descriptor in place of the `GenericForeignKey`,
+    and the admin reads `short_description` from that attribute, so the
+    labels declared on the fields no longer reached it and the headers
+    fell back to the attribute name. `AbstractNotificationAdmin` now
+    declares the three columns itself with the same labels.
+
 ## 1.12.2 (2026-08-19)
 
   - Fixed the json endpoints dropping fields declared on a swapped-in
