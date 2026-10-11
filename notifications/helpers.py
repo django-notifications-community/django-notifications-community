@@ -11,7 +11,7 @@ from notifications.utils import id2slug
 # strings below, ``data`` is attached separately, and the recipient is
 # the requesting user, since the queryset starts from
 # request.user.notifications.
-EXCLUDED_API_FIELDS = (
+API_EXCLUDED_FIELDS = (
     'recipient',
     'actor_content_type',
     'actor_object_id',
@@ -26,7 +26,7 @@ EXCLUDED_API_FIELDS = (
 def notification_to_dict(notification):
     """Serialize a notification's concrete fields for the json endpoints, keeping the plumbing and
     ``API_EXCLUDED_FIELDS`` out. File fields are reduced to their stored path."""
-    exclude = set(EXCLUDED_API_FIELDS).union(get_config()['API_EXCLUDED_FIELDS'])
+    exclude = set(API_EXCLUDED_FIELDS).union(get_config()['API_EXCLUDED_FIELDS'])
     struct = {}
     for field in notification._meta.concrete_fields:
         if field.name in exclude:
