@@ -16,7 +16,6 @@ for background on why the fork exists.
     forms helper and skips those, so serialization now walks the model's
     concrete fields directly. Many to many fields stay out as before,
     since they are not concrete fields.
-
   - Fixed the admin change list losing the translated labels of the
     actor, target and action object columns on Django 6.1. The model
     class there holds a descriptor in place of the `GenericForeignKey`,
@@ -24,6 +23,10 @@ for background on why the fork exists.
     labels declared on the fields no longer reached it and the headers
     fell back to the attribute name. `AbstractNotificationAdmin` now
     declares the three columns itself with the same labels.
+  - Added Django 6.1 to the CI matrix on Python 3.12 through 3.14 and
+    to the package classifiers. The install bound has allowed 6.1 since
+    1.12.0; the suite now runs against it on every push, in both model
+    modes.
 
 ## 1.12.2 (2026-08-19)
 
