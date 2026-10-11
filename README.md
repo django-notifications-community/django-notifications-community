@@ -344,9 +344,9 @@ notifications (read and unread) and follow the same key pattern —
 `{scope}_count` and `{scope}_list`, where `scope` mirrors the endpoint
 segment (so `all_count`, `all_list`).
 
-Notification JSON is produced via Django's `model_to_dict`, so any field you
-add to a [swapped-in notification model](#abstractnotification-model) shows up
-in the payload too. The recipient and the content type / object id columns
+Notification JSON follows the model's concrete fields, so any field you add
+to a [swapped-in notification model](#abstractnotification-model) shows up in
+the payload too. The recipient and the content type / object id columns
 behind the generic relations are left out: `actor`, `target`, and
 `action_object` are rendered as strings instead, and `data` is attached
 separately when it holds something. Two kinds of field are skipped, since

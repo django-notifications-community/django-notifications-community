@@ -1,6 +1,5 @@
 from django.core.cache import cache
 from django.db.models.fields.files import FieldFile
-from django.forms import model_to_dict
 
 from notifications.registry import apply_queryset_filters, collect_invalidation_keys
 from notifications.settings import get_config
@@ -25,23 +24,15 @@ EXCLUDED_API_FIELDS = (
 
 
 def notification_to_dict(notification):
-    """Serialize a notification's own fields for the json endpoints.
-
-    Many to many fields are skipped: ``value_from_object`` hands back
-    model instances, which JsonResponse cannot encode, and reading them
-    costs a query per notification. File fields are reduced to the
-    stored path for the same reason. Projects hold back their own fields
-    with ``API_EXCLUDED_FIELDS``.
-    """
-    exclude = (
-        EXCLUDED_API_FIELDS
-        + tuple(get_config()['API_EXCLUDED_FIELDS'])
-        + tuple(f.name for f in notification._meta.many_to_many)
-    )
-    struct = model_to_dict(notification, exclude=exclude)
-    for key, value in struct.items():
-        if isinstance(value, FieldFile):
-            struct[key] = value.name
+    """Serialize a notification's concrete fields for the json endpoints, keeping the plumbing and
+    ``API_EXCLUDED_FIELDS`` out. File fields are reduced to their stored path."""
+    exclude = set(EXCLUDED_API_FIELDS).union(get_config()['API_EXCLUDED_FIELDS'])
+    struct = {}
+    for field in notification._meta.concrete_fields:
+        if field.name in exclude:
+            continue
+        value = field.value_from_object(notification)
+        struct[field.name] = value.name if isinstance(value, FieldFile) else value
     return struct
 
 
