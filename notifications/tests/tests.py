@@ -531,6 +531,16 @@ class NotificationTestPages(TestCase):
         for field in ['id', 'level', 'unread', 'verb', 'description', 'timestamp', 'public', 'deleted', 'emailed']:
             self.assertIn(field, notification)
 
+    def test_list_api_serializes_non_editable_fields(self):
+        """A field with editable=False, such as an auto_now_add timestamp, belongs in the payload too."""
+        from unittest.mock import patch
+
+        self.login('to', 'pwd')
+        with patch.object(Notification._meta.get_field('timestamp'), 'editable', False):
+            response = self.client.get(reverse('notifications:live_all_notification_list'))
+        notification = json.loads(response.content.decode('utf-8'))['all_list'][0]
+        self.assertIn('timestamp', notification)
+
     def test_list_api_hides_plumbing_fields(self):
         """Regression test for issue #73: the excluded columns stay excluded."""
         self.login('to', 'pwd')

@@ -8,6 +8,15 @@ and published to PyPI as `django-notifications-community`. See
 [upstream issue #416](https://github.com/django-notifications/django-notifications/issues/416)
 for background on why the fork exists.
 
+## Unreleased
+
+  - Fixed the json endpoints dropping fields declared with
+    `editable=False` on a swapped-in notification model, such as an
+    `auto_now_add` timestamp or a UUID public id. `model_to_dict` is a
+    forms helper and skips those, so serialization now walks the model's
+    concrete fields directly. Many to many fields stay out as before,
+    since they are not concrete fields.
+
 ## 1.12.2 (2026-08-19)
 
   - Fixed the json endpoints dropping fields declared on a swapped-in
