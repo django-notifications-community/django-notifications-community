@@ -16,7 +16,6 @@ for background on why the fork exists.
     forms helper and skips those, so serialization now walks the model's
     concrete fields directly. Many to many fields stay out as before,
     since they are not concrete fields.
-
   - Fixed the admin change list losing the translated labels of the
     actor, target and action object columns on Django 6.1. The model
     class there holds a descriptor in place of the `GenericForeignKey`,
