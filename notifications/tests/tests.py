@@ -6,11 +6,13 @@ Replace this with more appropriate tests for your application.
 
 import json
 from datetime import timezone as dt_timezone
+from io import StringIO
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management import call_command
 from django.db import connection
 from django.template import Context, Template
 from django.test import RequestFactory, TestCase, override_settings
@@ -1491,3 +1493,12 @@ class CustomModelFieldKwargsTest(TestCase):
         notification = CategorizedNotification.objects.get(recipient=self.recipient)
         self.assertEqual(notification.category, self.category)
         self.assertFalse(notification.data)
+
+
+class MigrationsTest(TestCase):
+    def test_no_pending_migrations(self):
+        out = StringIO()
+        try:
+            call_command('makemigrations', '--check', '--dry-run', stdout=out, stderr=out)
+        except SystemExit:
+            self.fail(f'Model changes without a migration:\n{out.getvalue()}')
